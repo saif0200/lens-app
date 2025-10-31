@@ -1,9 +1,14 @@
 import "./App.css";
+import { invoke } from "@tauri-apps/api/core";
 
 function App() {
 
   const isMac = navigator.platform.toUpperCase().includes("MAC");
   const modKey = isMac ? "⌘" : "Ctrl";
+
+  const handleToggleWindow = () => {
+    invoke("toggle_window");
+  };
 
   return (
     <div className="app">
@@ -44,7 +49,8 @@ function App() {
         <button
           className="toolbar-segment toolbar-action"
           data-tauri-drag-region-disabled
-          aria-label="Show or hide (inactive)"
+          aria-label="Show or hide"
+          onClick={handleToggleWindow}
         >
           <span className="action-label">Show/Hide</span>
           <span className="keycap">{modKey}</span>
