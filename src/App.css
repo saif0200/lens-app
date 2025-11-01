@@ -1,4 +1,17 @@
 :root {
+  /* animation timing variables */
+  --anim-duration-fast: 160ms;
+  /* default medium duration used for exit (short) - overridden when `.app.with-input` is present */
+  --anim-duration-medium: 150ms;
+  /* opacity fade duration (used for entrance when overridden on .app.with-input) */
+  --anim-fade-duration: var(--anim-duration-medium);
+  --anim-ease: cubic-bezier(0.22, 0.9, 0.36, 1);
+  /* snappy exit with quick deceleration */
+  --anim-ease-exit: cubic-bezier(0.4, 0, 0.6, 1);
+  /* smooth entrance ease - no overshoot */
+  --anim-ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  /* shorter exit duration to make hide faster than show */
+  --anim-exit-duration: 150ms;
   --bg-transparent: transparent;
   --toolbar-bg: rgba(0, 0, 0, 0.75);
   --toolbar-border: rgba(255, 255, 255, 0.15);
@@ -150,34 +163,69 @@ body,
   max-height: 0;
   opacity: 0;
   overflow: hidden;
-  transition: max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.15s ease-out,
-    margin-top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Initial state: slightly up, scaled down, with stronger blur to hide text */
+  transform: translateY(-10px) scale(0.94);
+  transform-origin: top center;
+  filter: blur(4px);
+  /* Exit animation: snappy and quick */
+  transition:
+    max-height var(--anim-exit-duration) var(--anim-ease-exit),
+    opacity var(--anim-exit-duration) var(--anim-ease-exit),
+    transform var(--anim-exit-duration) var(--anim-ease-exit),
+    filter var(--anim-exit-duration) var(--anim-ease-exit),
+    margin-top var(--anim-exit-duration) var(--anim-ease-exit);
+  will-change: transform, opacity, max-height, filter;
   width: 100%;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .app.with-input .input-container {
-  max-height: 100px;
+  /* Final visible state: fully expanded with no blur */
+  max-height: 500px;
   opacity: 1;
-  margin-top: 6px;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+  margin-top: 8px;
+  /* Entrance animation: staggered for smooth visible effect */
+  transition:
+    max-height 300ms var(--anim-ease-entrance),
+    transform 300ms var(--anim-ease-entrance),
+    margin-top 300ms var(--anim-ease-entrance),
+    filter 220ms var(--anim-ease-entrance) 40ms,
+    opacity 240ms var(--anim-ease-entrance) 30ms;
 }
 
-.input-wrapper {
+/* optional subtle entrance/exit keyframes for browsers that prefer animation over transition */
+/* Removed springy keyframes. Transitions now provide a smooth expand/contract effect. */
+
+.chat-wrapper {
   display: flex;
-  align-items: center;
-  gap: var(--segment-gap);
-  padding: var(--toolbar-padding);
+  flex-direction: column;
   background: var(--toolbar-bg);
   border-radius: var(--toolbar-radius);
   box-shadow: var(--toolbar-glow), 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--toolbar-border);
   width: 500px;
   max-width: 90%;
+  overflow: hidden;
+  /* Smooth shadow transition on appearance */
+  transition: box-shadow 250ms ease;
 }
 
-.input-wrapper input {
+.chat-wrapper.expanded {
+  max-height: 450px;
+}
+
+.input-area {
+  display: flex;
+  align-items: center;
+  gap: var(--segment-gap);
+  padding: var(--toolbar-padding);
+}
+
+.input-area input {
   flex-grow: 1;
   padding: var(--segment-padding-y) var(--segment-padding-x);
   background: transparent;
@@ -186,11 +234,11 @@ body,
   font-size: 13px;
 }
 
-.input-wrapper input:focus {
+.input-area input:focus {
   outline: none;
 }
 
-.input-wrapper input::placeholder {
+.input-area input::placeholder {
   color: var(--text-secondary);
 }
 
@@ -222,9 +270,137 @@ body,
   fill: currentColor;
 }
 
+.messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-behavior: smooth;
+  max-height: 200px;
+}
+
+.messages-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.messages-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: messageSlideIn 0.2s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-user {
+  align-items: flex-end;
+}
+
+.message-ai {
+  align-items: flex-start;
+}
+
+.message-typing {
+  align-items: flex-start;
+}
+
+.message-text {
+  background: var(--segment-hover);
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  max-width: 80%;
+}
+
+.ai-text {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  max-width: 80%;
+  padding: 4px 0;
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  animation: typingDot 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
     transition: none !important;
+  }
+
+  .messages-area {
+    scroll-behavior: auto;
+  }
+
+  /* keep input-container static when user prefers reduced motion */
+  .input-container {
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .app.with-input .input-container {
+    filter: none !important;
   }
 }
