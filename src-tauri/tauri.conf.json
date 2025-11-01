@@ -14,7 +14,7 @@
       {
         "title": "lens-app",
         "width": 500,
-        "height": 180,
+        "height": 170,
         "transparent": true,
         "decorations": false,
         "alwaysOnTop": true,

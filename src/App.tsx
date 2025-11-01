@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -14,6 +14,22 @@ function App() {
   const handleAsk = () => {
     setShowInput(!showInput);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd/Ctrl + Enter
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleAsk();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showInput]);
 
   return (
     <div className={`app ${showInput ? "with-input" : ""}`}>
