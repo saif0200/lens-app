@@ -1,69 +1,54 @@
-/* CSS Variables for easy customization */
 :root {
-  /* Colors */
   --bg-transparent: transparent;
-  --toolbar-bg: rgba(30, 30, 32, 0.95);
-  --toolbar-border: rgba(255, 255, 255, 0.12);
-  --text-primary: rgba(255, 255, 255, 0.95);
+  --toolbar-bg: rgba(0, 0, 0, 0.75);
+  --toolbar-border: rgba(255, 255, 255, 0.15);
+  --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.7);
-  --segment-hover: rgba(255, 255, 255, 0.08);
-  --segment-active: rgba(255, 255, 255, 0.12);
-  --keycap-bg: rgba(255, 255, 255, 0.08);
+  --segment-hover: rgba(255, 255, 255, 0.1);
+  --segment-active: rgba(255, 255, 255, 0.15);
+  --keycap-bg: rgba(0, 0, 0, 0.3);
   --keycap-border: rgba(255, 255, 255, 0.15);
   --focus-ring: rgba(99, 179, 237, 0.6);
 
-  /* Spacing */
-  --toolbar-padding: 6px;
-  --segment-gap: 4px;
-  --segment-padding-x: 12px;
-  --segment-padding-y: 8px;
-  --keycap-size: 20px;
-  --keycap-gap: 4px;
+  --toolbar-padding: 4px;
+  --segment-gap: 2px;
+  --segment-padding-x: 10px;
+  --segment-padding-y: 6px;
+  --keycap-size: 18px;
 
-  /* Border Radius */
-  --toolbar-radius: 24px;
-  --segment-radius: 18px;
-  --keycap-radius: 4px;
+  --toolbar-radius: 20px;
+  --segment-radius: 16px;
+  --keycap-radius: 5px;
 
-  /* Shadows */
   --toolbar-glow: 0 0 0 1px var(--toolbar-border) inset;
 }
 
-/* Reset and base styles */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-html,
-body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, sans-serif;
+    "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  background: var(--bg-transparent);
-}
-
-/* App container */
+html,
+body,
 .app {
   width: 100%;
   height: 100%;
+  background: var(--bg-transparent);
+  overflow: hidden;
+}
+
+.app {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 12px;
-  background: var(--bg-transparent);
+  padding-top: 20px;
 }
 
-/* Toolbar */
 .toolbar {
   display: flex;
   align-items: center;
@@ -71,13 +56,10 @@ body {
   padding: var(--toolbar-padding);
   background: var(--toolbar-bg);
   border-radius: var(--toolbar-radius);
-  box-shadow: var(--toolbar-glow);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  overflow: hidden;
+  box-shadow: var(--toolbar-glow), 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--toolbar-border);
 }
 
-/* Toolbar segments (buttons) */
 .toolbar-segment {
   display: flex;
   align-items: center;
@@ -87,10 +69,10 @@ body {
   border: none;
   border-radius: var(--segment-radius);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
   white-space: nowrap;
   user-select: none;
   -webkit-user-select: none;
@@ -104,7 +86,6 @@ body {
 
 .toolbar-segment:active {
   background: var(--segment-active);
-  transform: scale(0.98);
 }
 
 .toolbar-segment:focus-visible {
@@ -112,12 +93,10 @@ body {
   outline-offset: 2px;
 }
 
-/* Drag handle specific styles */
 .drag-handle {
   cursor: grab;
-  padding: var(--segment-padding-y) 16px;
+  padding: var(--segment-padding-y) 12px;
   -webkit-app-region: drag;
-  min-width: 48px;
 }
 
 .drag-handle:active {
@@ -125,90 +104,126 @@ body {
 }
 
 .drag-handle svg {
-  opacity: 0.6;
+  opacity: 0.5;
   pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 .drag-handle:hover svg {
-  opacity: 0.9;
-}
-
-/* Action buttons */
-.toolbar-action {
-  color: var(--text-primary);
+  opacity: 0.8;
 }
 
 .action-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
 }
 
-/* Keycaps */
 .keycap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--keycap-size);
+  width: var(--keycap-size);
   height: var(--keycap-size);
-  padding: 0 5px;
   background: var(--keycap-bg);
   border: 1px solid var(--keycap-border);
   border-radius: var(--keycap-radius);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: var(--text-secondary);
 }
 
-/* Menu button */
 .toolbar-menu {
-  padding: var(--segment-padding-y) 10px;
+  padding: var(--segment-padding-y) 8px;
 }
 
 .toolbar-menu svg {
-  opacity: 0.7;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
 }
 
 .toolbar-menu:hover svg {
   opacity: 1;
 }
 
-/* Responsive adjustments */
-@media (max-width: 500px) {
-  .toolbar {
-    font-size: 13px;
-  }
 
-  .action-label {
-    font-size: 13px;
-  }
 
-  .keycap {
-    font-size: 11px;
-    min-width: 18px;
-    height: 18px;
-  }
+.input-container {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out,
+    margin-top 0.3s ease-in-out;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
-/* Accessibility - High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --toolbar-border: rgba(255, 255, 255, 0.3);
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.9);
-    --keycap-border: rgba(255, 255, 255, 0.4);
-  }
-
-  .toolbar-segment:focus-visible {
-    outline-width: 3px;
-  }
+.app.with-input .input-container {
+  max-height: 100px;
+  opacity: 1;
+  margin-top: 12px;
 }
 
-/* Accessibility - Reduced motion */
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--segment-gap);
+  padding: var(--toolbar-padding);
+  background: var(--toolbar-bg);
+  border-radius: var(--toolbar-radius);
+  box-shadow: var(--toolbar-glow), 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--toolbar-border);
+  width: 500px;
+  max-width: 90%;
+}
+
+.input-wrapper input {
+  flex-grow: 1;
+  padding: var(--segment-padding-y) var(--segment-padding-x);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+}
+
+.input-wrapper input::placeholder {
+  color: var(--text-secondary);
+}
+
+.send-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--segment-radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.send-button:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.send-button:active {
+  background: var(--segment-active);
+}
+
+.send-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
   }
 }

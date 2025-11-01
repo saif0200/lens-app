@@ -1,8 +1,9 @@
+import { useState } from "react";
 import "./App.css";
 import { invoke } from "@tauri-apps/api/core";
 
 function App() {
-
+  const [showInput, setShowInput] = useState(false);
   const isMac = navigator.platform.toUpperCase().includes("MAC");
   const modKey = isMac ? "⌘" : "Ctrl";
 
@@ -10,8 +11,12 @@ function App() {
     invoke("toggle_window");
   };
 
+  const handleAsk = () => {
+    setShowInput(!showInput);
+  };
+
   return (
-    <div className="app">
+    <div className={`app ${showInput ? "with-input" : ""}`}>
       <div className="toolbar">
         <button
           className="toolbar-segment drag-handle"
@@ -39,7 +44,8 @@ function App() {
         <button
           className="toolbar-segment toolbar-action"
           data-tauri-drag-region-disabled
-          aria-label="Ask (inactive)"
+          aria-label="Ask"
+          onClick={handleAsk}
         >
           <span className="action-label">Ask</span>
           <span className="keycap">{modKey}</span>
@@ -76,6 +82,29 @@ function App() {
             <circle cx="8" cy="13" r="1.5" fill="currentColor" />
           </svg>
         </button>
+      </div>
+
+      <div className="input-container">
+        <div className="input-wrapper">
+          <input
+            type="text"
+            placeholder={`Ask about your screen or conversation, or ${modKey} ↵ for Assist`}
+          />
+          <button className="send-button" aria-label="Send">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M4.5 19.5L21.5 12L4.5 4.5V10.5L15.5 12L4.5 13.5V19.5Z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

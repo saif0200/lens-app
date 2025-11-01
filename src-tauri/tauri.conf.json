@@ -14,11 +14,12 @@
       {
         "title": "lens-app",
         "width": 500,
-        "height": 80,
+        "height": 180,
         "transparent": true,
         "decorations": false,
         "alwaysOnTop": true,
-        "resizable": false
+        "resizable": false,
+        "shadow": false
       }
     ],
     "security": {
