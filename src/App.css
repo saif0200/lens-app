@@ -331,7 +331,7 @@ body,
 
 .messages-area {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding: 12px;
   padding-bottom: 8px;
   display: flex;
@@ -339,24 +339,13 @@ body,
   gap: 8px;
   scroll-behavior: smooth;
   max-height: 200px;
-  scrollbar-gutter: stable;
+  /* Hide scrollbar for all browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 .messages-area::-webkit-scrollbar {
-  width: 6px;
-}
-
-.messages-area::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.messages-area::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-}
-
-.messages-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .message {

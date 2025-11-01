@@ -24,9 +24,10 @@ function App() {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isWindowVisible, setIsWindowVisible] = useState(true);
-  const latestUserMessageRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
+  const lastScrollKeyRef = useRef<string | null>(null);
   const isMac = navigator.platform.toUpperCase().includes("MAC");
   const modKey = isMac ? "⌘" : "Ctrl";
 
@@ -168,12 +169,40 @@ function App() {
     }
   }, [showInput]);
 
-  // Auto-scroll to latest user message (position at top)
+  const scrollTargetMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const scrollTargetKey = scrollTargetMessage
+    ? JSON.stringify([
+        scrollTargetMessage.id,
+        scrollTargetMessage.type,
+        scrollTargetMessage.type === "ai" ? scrollTargetMessage.text : null,
+      ])
+    : null;
+
+  // Auto-scroll to latest visible message, including streaming updates
   useEffect(() => {
-    if (latestUserMessageRef.current) {
-      latestUserMessageRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!scrollTargetKey) {
+      lastScrollKeyRef.current = null;
+      return;
     }
-  }, [messages]);
+
+    if (lastScrollKeyRef.current === scrollTargetKey) {
+      return;
+    }
+
+    const node = messagesEndRef.current;
+    if (!node) {
+      return;
+    }
+
+    lastScrollKeyRef.current = scrollTargetKey;
+
+    requestAnimationFrame(() => {
+      node.scrollIntoView({
+        behavior: scrollTargetMessage?.type === "typing" ? "auto" : "smooth",
+        block: "end",
+      });
+    });
+  }, [scrollTargetKey]);
 
   return (
     <div className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}>
@@ -272,17 +301,11 @@ function App() {
         <div className={`chat-wrapper ${hasExpanded ? "expanded" : ""}`}>
           {hasExpanded && (
             <div className="messages-area">
-              {messages.map((message, index) => {
-                // Find the last user message
-                const isLatestUserMessage = message.type === 'user' &&
-                  index === messages.map(m => m.type).lastIndexOf('user');
-
-                return (
-                  <div
-                    key={message.id}
-                    className={`message message-${message.type}`}
-                    ref={isLatestUserMessage ? latestUserMessageRef : null}
-                  >
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`message message-${message.type}`}
+                >
                     {message.type === 'user' && (
                       <div className="message-text">{message.text}</div>
                     )}
@@ -296,9 +319,9 @@ function App() {
                         <span></span>
                       </div>
                     )}
-                  </div>
-                );
-              })}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
           <div className="input-area">
