@@ -1,5 +1,6 @@
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_global_shortcut::ShortcutState;
+use tauri_plugin_global_shortcut::Code;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -27,11 +28,16 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts(["CommandOrControl+Backslash"])
+                .with_shortcuts(["CommandOrControl+Backslash", "CommandOrControl+Enter"])
                 .unwrap()
-                .with_handler(|app, _shortcut, event| {
+                .with_handler(|app, shortcut, event| {
                     if event.state == ShortcutState::Pressed {
-                        toggle_window(app.clone());
+                        if shortcut.key == Code::Enter {
+                            // Emit event for React to handle the ask action
+                            let _ = app.emit("ask-triggered", ());
+                        } else if shortcut.key == Code::Backslash {
+                            toggle_window(app.clone());
+                        }
                     }
                 })
                 .build(),

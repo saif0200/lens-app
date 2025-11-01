@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 function App() {
   const [showInput, setShowInput] = useState(false);
@@ -16,18 +17,13 @@ function App() {
   };
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Cmd/Ctrl + Enter
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        e.preventDefault();
-        handleAsk();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
+    // Listen for global shortcut event from Rust backend
+    const unlisten = listen("ask-triggered", () => {
+      handleAsk();
+    });
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      unlisten.then((fn) => fn());
     };
   }, [showInput]);
 
