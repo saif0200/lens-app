@@ -71,6 +71,7 @@ body,
   border-radius: var(--toolbar-radius);
   box-shadow: var(--toolbar-glow), 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--toolbar-border);
+  position: relative;
 }
 
 .toolbar-segment {
@@ -142,6 +143,8 @@ body,
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
+  line-height: 1;
+  padding-top: 1px;
 }
 
 .toolbar-menu {
@@ -157,7 +160,63 @@ body,
   opacity: 1;
 }
 
+.reset-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--toolbar-border);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: absolute;
+  right: -40px;
+  box-shadow: var(--toolbar-glow), 0 4px 16px rgba(0, 0, 0, 0.15);
+  /* Hidden state - clean fade out */
+  opacity: 0;
+  transform: scale(0.92);
+  filter: blur(1px);
+  pointer-events: none;
+  transition:
+    opacity 150ms var(--anim-ease-exit),
+    transform 150ms var(--anim-ease-exit),
+    filter 150ms var(--anim-ease-exit),
+    background 0.2s ease,
+    color 0.2s ease;
+  -webkit-app-region: no-drag;
+}
 
+.reset-button.visible {
+  /* Visible state - clean smooth appearance */
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0px);
+  pointer-events: auto;
+  transition:
+    opacity 280ms var(--anim-ease-entrance),
+    transform 280ms var(--anim-ease-entrance),
+    filter 240ms var(--anim-ease-entrance);
+}
+
+.reset-button:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.reset-button:active {
+  background: var(--segment-active);
+}
+
+.reset-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.reset-button svg {
+  pointer-events: none;
+}
 
 .input-container {
   max-height: 0;
@@ -280,6 +339,7 @@ body,
   gap: 8px;
   scroll-behavior: smooth;
   max-height: 200px;
+  scrollbar-gutter: stable;
 }
 
 .messages-area::-webkit-scrollbar {
@@ -402,5 +462,11 @@ body,
 
   .app.with-input .input-container {
     filter: none !important;
+  }
+
+  .reset-button {
+    transform: none !important;
+    filter: none !important;
+    transition: opacity 0.15s ease, background 0.2s ease, color 0.2s ease !important;
   }
 }

@@ -23,7 +23,9 @@ function App() {
   const [hasExpanded, setHasExpanded] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isWindowVisible, setIsWindowVisible] = useState(true);
   const latestUserMessageRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
   const isMac = navigator.platform.toUpperCase().includes("MAC");
   const modKey = isMac ? "⌘" : "Ctrl";
@@ -33,17 +35,32 @@ function App() {
   };
 
   const handleAsk = () => {
+    // Don't allow ask to work when window is hidden
+    if (!isWindowVisible) return;
+
     // Prevent rapid toggling to avoid animation breaks
     if (isAnimatingRef.current) return;
 
     isAnimatingRef.current = true;
     setShowInput(!showInput);
 
-    // Reset animation lock after animation completes (280ms entrance, 150ms exit)
-    const animDuration = showInput ? 150 : 280;
+    // Reset animation lock after animation completes (300ms entrance, 150ms exit)
+    const animDuration = showInput ? 150 : 300;
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, animDuration);
+  };
+
+  const handleResetChat = () => {
+    // First, trigger the exit animation by closing the input
+    setShowInput(false);
+
+    // Then, after the exit animation completes (150ms), clear the chat state
+    setTimeout(() => {
+      setMessages([]);
+      setHasExpanded(false);
+      setInputValue("");
+    }, 150);
   };
 
   const handleSendMessage = () => {
@@ -98,6 +115,22 @@ function App() {
   };
 
   useEffect(() => {
+    // Listen for window visibility events
+    const unlistenShow = listen("window-shown", () => {
+      setIsWindowVisible(true);
+    });
+
+    const unlistenHide = listen("window-hidden", () => {
+      setIsWindowVisible(false);
+    });
+
+    return () => {
+      unlistenShow.then((fn) => fn());
+      unlistenHide.then((fn) => fn());
+    };
+  }, []);
+
+  useEffect(() => {
     // Listen for global shortcut event from Rust backend
     const unlisten = listen("ask-triggered", () => {
       handleAsk();
@@ -106,7 +139,34 @@ function App() {
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [showInput]); // Only re-create listener when showInput changes for proper toggle
+  }, [showInput, isWindowVisible]); // Re-create when visibility changes
+
+  useEffect(() => {
+    // Listen for ESC key to reset chat
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && messages.length > 0 && showInput) {
+        handleResetChat();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [messages.length, showInput]);
+
+  // Auto-focus input when chat opens
+  useEffect(() => {
+    if (showInput && inputRef.current) {
+      // Use requestAnimationFrame to focus after render completes
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          inputRef.current?.focus();
+        });
+      });
+    }
+  }, [showInput]);
 
   // Auto-scroll to latest user message (position at top)
   useEffect(() => {
@@ -182,6 +242,30 @@ function App() {
             <circle cx="8" cy="13" r="1.5" fill="currentColor" />
           </svg>
         </button>
+
+        <button
+          className={`reset-button ${messages.length > 0 && showInput ? "visible" : ""}`}
+          data-tauri-drag-region-disabled
+          aria-label="Reset chat"
+          title="Reset chat"
+          onClick={handleResetChat}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M2 2L10 10M10 2L2 10"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <div className="input-container">
@@ -219,6 +303,7 @@ function App() {
           )}
           <div className="input-area">
             <input
+              ref={inputRef}
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}

@@ -14,9 +14,11 @@ fn toggle_window(app: AppHandle) {
         let _ = window.is_visible().map(|visible| {
             if visible {
                 let _ = window.hide();
+                let _ = app.emit("window-hidden", ());
             } else {
                 let _ = window.show();
                 let _ = window.set_focus();
+                let _ = app.emit("window-shown", ());
             }
         });
     }
@@ -33,8 +35,16 @@ pub fn run() {
                 .with_handler(|app, shortcut, event| {
                     if event.state == ShortcutState::Pressed {
                         if shortcut.key == Code::Enter {
-                            // Emit event for React to handle the ask action
-                            let _ = app.emit("ask-triggered", ());
+                            // Only emit ask event if window is visible
+                            if let Some(window) = app.get_webview_window("main") {
+                                if let Ok(visible) = window.is_visible() {
+                                    if visible {
+                                        // Ensure window has focus before emitting event
+                                        let _ = window.set_focus();
+                                        let _ = app.emit("ask-triggered", ());
+                                    }
+                                }
+                            }
                         } else if shortcut.key == Code::Backslash {
                             toggle_window(app.clone());
                         }
