@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import type { AnchorHTMLAttributes, HTMLAttributes } from "react";
 import "./App.css";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { sendMessageToGemini } from "./gemini";
 
 interface Message {
@@ -10,6 +14,53 @@ interface Message {
   timestamp: Date;
   type: 'user' | 'ai' | 'typing';
 }
+
+type MarkdownLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
+  node?: unknown;
+};
+
+type MarkdownCodeProps = HTMLAttributes<HTMLElement> & {
+  inline?: boolean;
+  node?: unknown;
+};
+
+const MarkdownLink = ({ node, ...props }: MarkdownLinkProps) => {
+  void node;
+  return <a {...props} target="_blank" rel="noopener noreferrer" />;
+};
+
+const MarkdownCode = ({
+  inline,
+  className,
+  children,
+  node,
+  ...props
+}: MarkdownCodeProps) => {
+  void node;
+  if (inline) {
+    const combinedClassName = ["ai-code-inline", className]
+      .filter(Boolean)
+      .join(" ");
+    return (
+      <code className={combinedClassName} {...props}>
+        {children}
+      </code>
+    );
+  }
+
+  return (
+    <pre className="ai-code-block">
+      <code className={className ?? ""} {...props}>
+        {children}
+      </code>
+    </pre>
+  );
+};
+
+const markdownComponents = {
+  a: MarkdownLink,
+  code: MarkdownCode,
+} satisfies Components;
 
 function App() {
   const [showInput, setShowInput] = useState(false);
@@ -326,7 +377,16 @@ function App() {
                       <div className="message-text">{message.text}</div>
                     )}
                     {message.type === 'ai' && (
-                      <div className="ai-text">{message.text}</div>
+                      <div className="ai-text">
+                        <div className="ai-markdown">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
+                          >
+                            {message.text}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
                     )}
                     {message.type === 'typing' && (
                       <div className="typing-indicator">
