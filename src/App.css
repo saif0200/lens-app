@@ -286,7 +286,7 @@ body,
 
 .input-area input {
   flex-grow: 1;
-  padding: var(--segment-padding-y) var(--segment-padding-x);
+  padding: 4px var(--segment-padding-x);
   background: transparent;
   border: none;
   color: var(--text-primary);
@@ -342,6 +342,29 @@ body,
   /* Hide scrollbar for all browsers */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
+  /* Add blur effect at both top and bottom for smoother transitions */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 3%,
+    rgba(0, 0, 0, 0.6) 8%,
+    black 15%,
+    black 85%,
+    rgba(0, 0, 0, 0.6) 92%,
+    rgba(0, 0, 0, 0.3) 97%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.3) 3%,
+    rgba(0, 0, 0, 0.6) 8%,
+    black 15%,
+    black 85%,
+    rgba(0, 0, 0, 0.6) 92%,
+    rgba(0, 0, 0, 0.3) 97%,
+    transparent 100%
+  );
 }
 
 .messages-area::-webkit-scrollbar {
