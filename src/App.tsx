@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { sendMessageToGemini } from "./gemini";
 
 interface Message {
   id: number;
@@ -9,14 +10,6 @@ interface Message {
   timestamp: Date;
   type: 'user' | 'ai' | 'typing';
 }
-
-const MOCK_AI_RESPONSES = [
-  "I understand what you're asking about.",
-  "That's an interesting question. Let me help you with that.",
-  "I can see what you mean. Here's what I think.",
-  "Good point! I've processed your request.",
-  "Thanks for sharing that. I'm here to assist.",
-];
 
 function App() {
   const [showInput, setShowInput] = useState(false);
@@ -94,18 +87,41 @@ function App() {
 
     setMessages((prev) => [...prev, typingMessage]);
 
-    // After 500ms, remove typing and add AI response
-    setTimeout(() => {
-      const randomResponse = MOCK_AI_RESPONSES[Math.floor(Math.random() * MOCK_AI_RESPONSES.length)];
-      const aiMessage: Message = {
-        id: Date.now(),
-        text: randomResponse,
-        timestamp: new Date(),
-        type: 'ai',
-      };
+    // Convert conversation history to format expected by Gemini
+    const conversationHistory = messages
+      .filter(msg => msg.type !== 'typing')
+      .map(msg => ({
+        role: msg.type === 'user' ? 'user' as const : 'model' as const,
+        text: msg.text,
+      }));
 
-      setMessages((prev) => prev.filter(msg => msg.id !== typingId).concat(aiMessage));
-    }, 500);
+    // Call Gemini and wait for complete response
+    sendMessageToGemini(userMessage.text, conversationHistory)
+      .then((responseText) => {
+        const aiMessage: Message = {
+          id: Date.now(),
+          text: responseText,
+          timestamp: new Date(),
+          type: 'ai',
+        };
+        // Remove typing indicator and add AI response
+        setMessages((prev) =>
+          prev.filter(msg => msg.id !== typingId).concat(aiMessage)
+        );
+      })
+      .catch((error) => {
+        // Handle errors by showing error message
+        console.error('Gemini API error:', error);
+        const errorMessage: Message = {
+          id: Date.now(),
+          text: "Sorry, I couldn't process that request. Please try again.",
+          timestamp: new Date(),
+          type: 'ai',
+        };
+        setMessages((prev) =>
+          prev.filter(msg => msg.id !== typingId).concat(errorMessage)
+        );
+      });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
