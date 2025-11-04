@@ -47,19 +47,19 @@
 }
 
 html,
-body,
-.app {
+body {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   background: var(--bg-transparent);
   overflow: hidden;
 }
 
 .app {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 20px;
+  padding: 12px 0 16px;
 }
 
 .toolbar {
@@ -98,6 +98,18 @@ body,
   color: var(--text-primary);
 }
 
+.toolbar-segment:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.toolbar-segment:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
 .toolbar-segment:active {
   background: var(--segment-active);
 }
@@ -129,6 +141,29 @@ body,
 
 .action-label {
   font-size: 13px;
+}
+
+.screen-share-toggle {
+  gap: 10px;
+}
+
+.screen-share-toggle.active,
+.screen-share-toggle[aria-pressed="true"] {
+  background: var(--segment-active);
+  color: var(--text-primary);
+}
+
+.screen-share-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.screen-share-toggle[aria-pressed="true"] .screen-share-indicator {
+  background: #4ade80;
+  opacity: 1;
 }
 
 .keycap {
@@ -164,15 +199,15 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   background: var(--toolbar-bg);
   border: 1px solid var(--toolbar-border);
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
   position: absolute;
-  right: -40px;
+  right: -32px;
   box-shadow: var(--toolbar-glow), 0 4px 16px rgba(0, 0, 0, 0.15);
   /* Hidden state - clean fade out */
   opacity: 0;
@@ -242,7 +277,7 @@ body,
 
 .app.with-input .input-container {
   /* Final visible state: fully expanded with no blur */
-  max-height: 500px;
+  max-height: 310px;
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: blur(0px);
@@ -274,7 +309,7 @@ body,
 }
 
 .chat-wrapper.expanded {
-  max-height: 450px;
+  max-height: 310px;
 }
 
 .input-area {
@@ -412,6 +447,89 @@ body,
   max-width: 80%;
 }
 
+.message-screen-note {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.message-screen-note-label {
+  opacity: 0.85;
+}
+
+.message-screen-thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background 0.2s ease, border 0.2s ease, color 0.2s ease;
+}
+
+.message-screen-thumb:hover,
+.message-screen-thumb:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--text-primary);
+}
+
+.message-screen-thumb svg {
+  pointer-events: none;
+}
+
+.message-screen-thumb:focus {
+  outline: none;
+}
+
+.message-screen-preview {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  transform: translateY(0) scale(0.9);
+  transform-origin: top right;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(12, 12, 14, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 20;
+  width: clamp(140px, 30vw, 200px);
+  max-height: clamp(100px, 28vh, 140px);
+  overflow: hidden;
+}
+
+.message-screen-thumb:hover .message-screen-preview,
+.message-screen-thumb:focus-visible .message-screen-preview {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.message-screen-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 .ai-text {
   color: var(--text-primary);
   font-size: 13px;
@@ -480,12 +598,16 @@ body,
 }
 
 .ai-code-inline {
-  display: inline-block;
-  padding: 0 4px;
+  display: inline;
+  padding: 1px 4px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  box-decoration-break: clone;
 }
 
 .ai-code-block {

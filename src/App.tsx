@@ -13,6 +13,8 @@ interface Message {
   text: string;
   timestamp: Date;
   type: 'user' | 'ai' | 'typing';
+  screenshotIncluded?: boolean;
+  screenshotData?: string;
 }
 
 type MarkdownLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
@@ -37,7 +39,18 @@ const MarkdownCode = ({
   ...props
 }: MarkdownCodeProps) => {
   void node;
-  if (inline) {
+  const childText = Array.isArray(children)
+    ? children
+        .map((child) => (typeof child === "string" ? child : ""))
+        .join("")
+    : typeof children === "string"
+      ? children
+      : "";
+
+  const isInline =
+    inline ?? !/\r|\n/.test(childText);
+
+  if (isInline) {
     const combinedClassName = ["ai-code-inline", className]
       .filter(Boolean)
       .join(" ");
@@ -49,11 +62,11 @@ const MarkdownCode = ({
   }
 
   return (
-    <pre className="ai-code-block">
+    <div className="ai-code-block">
       <code className={className ?? ""} {...props}>
         {children}
       </code>
-    </pre>
+    </div>
   );
 };
 
@@ -68,15 +81,53 @@ function App() {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isWindowVisible, setIsWindowVisible] = useState(true);
+  const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
+  const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
   const lastScrollKeyRef = useRef<string | null>(null);
-  const isMac = navigator.platform.toUpperCase().includes("MAC");
+  const isMac =
+    typeof navigator !== "undefined"
+      ? navigator.platform.toUpperCase().includes("MAC")
+      : false;
   const modKey = isMac ? "⌘" : "Ctrl";
 
   const handleToggleWindow = () => {
     invoke("toggle_window");
+  };
+
+  const handleScreenShareToggle = async () => {
+    if (isCapturingScreenshot) {
+      return;
+    }
+
+    if (isScreenShareEnabled) {
+      setIsScreenShareEnabled(false);
+      return;
+    }
+
+    setIsCapturingScreenshot(true);
+    try {
+      const screenshot = await captureScreenshot();
+      if (screenshot) {
+        setIsScreenShareEnabled(true);
+      } else {
+        console.warn("Screenshot capture did not return data; screen share remains off.");
+      }
+    } finally {
+      setIsCapturingScreenshot(false);
+    }
+  };
+
+  const captureScreenshot = async (): Promise<string | null> => {
+    try {
+      const base64 = await invoke<string>("capture_screen");
+      return base64 ?? null;
+    } catch (error) {
+      console.error("Screen capture failed:", error);
+      return null;
+    }
   };
 
   const handleAsk = () => {
@@ -105,21 +156,40 @@ function App() {
       setMessages([]);
       setHasExpanded(false);
       setInputValue("");
+      setIsScreenShareEnabled(false);
     }, 150);
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim() === "") return;
+
+    const messageText = inputValue;
+    setInputValue("");
+
+    let screenshotBase64: string | null = null;
+    let screenshotIncluded = false;
+    let screenshotDataUrl: string | null = null;
+
+    if (isScreenShareEnabled) {
+      screenshotBase64 = await captureScreenshot();
+      if (screenshotBase64) {
+        screenshotIncluded = true;
+        screenshotDataUrl = `data:image/png;base64,${screenshotBase64}`;
+      } else {
+        setIsScreenShareEnabled(false);
+      }
+    }
 
     const userMessage: Message = {
       id: Date.now(),
-      text: inputValue,
+      text: messageText,
       timestamp: new Date(),
       type: 'user',
+      screenshotIncluded,
+      screenshotData: screenshotDataUrl ?? undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
 
     // Expand chat on first message
     if (!hasExpanded) {
@@ -143,11 +213,13 @@ function App() {
       .filter(msg => msg.type !== 'typing')
       .map(msg => ({
         role: msg.type === 'user' ? 'user' as const : 'model' as const,
-        text: msg.text,
+        text: msg.screenshotIncluded
+          ? `${msg.text}\n\n[User shared a screenshot of their screen with this message.]`
+          : msg.text,
       }));
 
     // Call Gemini and wait for complete response
-    sendMessageToGemini(userMessage.text, conversationHistory)
+    sendMessageToGemini(userMessage.text, conversationHistory, screenshotBase64 ?? undefined)
       .then((responseText) => {
         const aiMessage: Message = {
           id: Date.now(),
@@ -178,7 +250,7 @@ function App() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      handleSendMessage();
+      void handleSendMessage();
     }
   };
 
@@ -309,6 +381,27 @@ function App() {
         </button>
 
         <button
+          className={`toolbar-segment toolbar-action screen-share-toggle ${isScreenShareEnabled ? "active" : ""}`}
+          data-tauri-drag-region-disabled
+          aria-label={`Screen share ${isScreenShareEnabled ? "on" : "off"}`}
+          aria-pressed={isScreenShareEnabled}
+          onClick={() => {
+            void handleScreenShareToggle();
+          }}
+          disabled={isCapturingScreenshot}
+          title={
+            isCapturingScreenshot
+              ? "Capturing your screen..."
+              : isScreenShareEnabled
+                ? "Stop sharing your current screen capture"
+                : "Capture your screen for the next message"
+          }
+        >
+          <span className="action-label">Share Screen</span>
+          <span className="screen-share-indicator" aria-hidden="true" />
+        </button>
+
+        <button
           className="toolbar-segment toolbar-action"
           data-tauri-drag-region-disabled
           aria-label="Show or hide"
@@ -374,7 +467,37 @@ function App() {
                   className={`message message-${message.type}`}
                 >
                     {message.type === 'user' && (
-                      <div className="message-text">{message.text}</div>
+                      <>
+                        <div className="message-text">{message.text}</div>
+                        {message.screenshotIncluded && (
+                          <div className="message-screen-note">
+                            <span className="message-screen-note-label">Sent your screen</span>
+                            {message.screenshotData && (
+                              <button
+                                type="button"
+                                className="message-screen-thumb"
+                                aria-label="Preview shared screen"
+                              >
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M21 19H3C1.9 19 1 18.1 1 17V7C1 5.9 1.9 5 3 5H21C22.1 5 23 5.9 23 7V17C23 18.1 22.1 19 21 19ZM3 7V17H21V7H3ZM9 15C7.34 15 6 13.66 6 12C6 10.34 7.34 9 9 9C10.66 9 12 10.34 12 12C12 13.66 10.66 15 9 15ZM9 11C8.45 11 8 11.45 8 12C8 12.55 8.45 13 9 13C9.55 13 10 12.55 10 12C10 11.45 9.55 11 9 11ZM18 15H13V13H18V15ZM18 11H14V9H18V11Z"
+                                    fill="currentColor"
+                                  />
+                                </svg>
+                                <div className="message-screen-preview">
+                                  <img src={message.screenshotData} alt="Shared screen preview" />
+                                </div>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                     {message.type === 'ai' && (
                       <div className="ai-text">
@@ -409,7 +532,13 @@ function App() {
               onKeyDown={handleKeyDown}
               placeholder={`Ask about your screen or conversation, or ${modKey} ↵ for Assist`}
             />
-            <button className="send-button" aria-label="Send" onClick={handleSendMessage}>
+            <button
+              className="send-button"
+              aria-label="Send"
+              onClick={() => {
+                void handleSendMessage();
+              }}
+            >
               <svg
                 width="24"
                 height="24"

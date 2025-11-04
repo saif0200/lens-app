@@ -32,16 +32,32 @@ export interface Message {
  * Sends a message to Gemini and returns the complete response
  * @param message - The user's message
  * @param conversationHistory - Array of previous messages (last 4-8 messages recommended)
+ * @param screenshotBase64 - Optional base64-encoded PNG screenshot to share with Gemini
  * @returns Promise that resolves with the complete response text
  */
 export async function sendMessageToGemini(
   message: string,
-  conversationHistory: Message[]
+  conversationHistory: Message[],
+  screenshotBase64?: string
 ): Promise<string> {
   try {
     // Format conversation history for Gemini API
     // Take only the last 4-8 messages for context (as per user requirement)
     const recentHistory = conversationHistory.slice(-8);
+
+    const userParts: Array<
+      | { text: string }
+      | { inlineData: { mimeType: string; data: string } }
+    > = [{ text: message }];
+
+    if (screenshotBase64) {
+      userParts.push({
+        inlineData: {
+          mimeType: "image/png",
+          data: screenshotBase64,
+        },
+      });
+    }
 
     const contents = [
       // Add conversation history
@@ -52,7 +68,7 @@ export async function sendMessageToGemini(
       // Add current message
       {
         role: "user" as const,
-        parts: [{ text: message }],
+        parts: userParts,
       },
     ];
 
