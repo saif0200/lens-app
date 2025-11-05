@@ -257,10 +257,10 @@ body {
   max-height: 0;
   opacity: 0;
   overflow: hidden;
-  /* Initial state: slightly up, scaled down, with stronger blur to hide text */
-  transform: translateY(-10px) scale(0.94);
+  /* Initial state: scaled down for larger pill - more dramatic entrance */
+  transform: scale(0.92);
   transform-origin: top center;
-  filter: blur(4px);
+  filter: blur(8px);
   /* Exit animation: snappy and quick */
   transition:
     max-height var(--anim-exit-duration) var(--anim-ease-exit),
@@ -279,16 +279,16 @@ body {
   /* Final visible state: fully expanded with no blur */
   max-height: 310px;
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: scale(1);
   filter: blur(0px);
   margin-top: 8px;
-  /* Entrance animation: staggered for smooth visible effect */
+  /* Entrance animation: smooth scale-up for larger pill */
   transition:
-    max-height 300ms var(--anim-ease-entrance),
-    transform 300ms var(--anim-ease-entrance),
-    margin-top 300ms var(--anim-ease-entrance),
-    filter 220ms var(--anim-ease-entrance) 40ms,
-    opacity 240ms var(--anim-ease-entrance) 30ms;
+    max-height 350ms var(--anim-ease-entrance),
+    transform 350ms var(--anim-ease-entrance),
+    margin-top 350ms var(--anim-ease-entrance),
+    filter 200ms var(--anim-ease-entrance) 80ms,
+    opacity 280ms var(--anim-ease-entrance) 20ms;
 }
 
 /* optional subtle entrance/exit keyframes for browsers that prefer animation over transition */

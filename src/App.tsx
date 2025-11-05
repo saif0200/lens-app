@@ -140,8 +140,8 @@ function App() {
     isAnimatingRef.current = true;
     setShowInput(!showInput);
 
-    // Reset animation lock after animation completes (300ms entrance, 150ms exit)
-    const animDuration = showInput ? 150 : 300;
+    // Reset animation lock after animation completes (350ms entrance, 150ms exit)
+    const animDuration = showInput ? 150 : 350;
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, animDuration);
