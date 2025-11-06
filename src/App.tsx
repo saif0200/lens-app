@@ -8,6 +8,24 @@ import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { sendMessageToGemini } from "./gemini";
 
+const cleanAiText = (text: string): string => {
+  if (!text) {
+    return text;
+  }
+
+  const normalizedLineEndings = text.replace(/\r\n/g, "\n");
+  const trimmedLineEnds = normalizedLineEndings
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n");
+
+  const tightenedPunctuation = trimmedLineEnds
+    .replace(/([^\s])\s+([.,!?;:])/g, "$1$2")
+    .replace(/([^\s])\s+([\)\]\}])/g, "$1$2");
+
+  return tightenedPunctuation.trimEnd();
+};
+
 type MathJaxObject = {
   typesetPromise?: (elements?: (Element | Document)[]) => Promise<void>;
   typeset?: (elements?: (Element | Document)[]) => void;
@@ -250,9 +268,10 @@ function App() {
     // Call Gemini and wait for complete response
     sendMessageToGemini(userMessage.text, conversationHistory, screenshotBase64 ?? undefined)
       .then((responseText) => {
+        const cleanedResponse = cleanAiText(responseText);
         const aiMessage: Message = {
           id: Date.now(),
-          text: responseText,
+          text: cleanedResponse,
           timestamp: new Date(),
           type: 'ai',
         };
