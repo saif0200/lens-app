@@ -86,7 +86,7 @@ body {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
   white-space: nowrap;
   user-select: none;
   -webkit-user-select: none;
@@ -149,8 +149,18 @@ body {
 
 .screen-share-toggle.active,
 .screen-share-toggle[aria-pressed="true"] {
-  background: var(--segment-active);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
+}
+
+.screen-share-toggle.active:hover,
+.screen-share-toggle[aria-pressed="true"]:hover {
+  background: var(--segment-hover);
+}
+
+.screen-share-toggle.active:active,
+.screen-share-toggle[aria-pressed="true"]:active {
+  background: var(--segment-active);
 }
 
 .screen-share-indicator {
@@ -158,12 +168,16 @@ body {
   height: 8px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.25);
-  transition: background 0.2s ease, opacity 0.2s ease;
+  transition: background 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
 }
 
 .screen-share-toggle[aria-pressed="true"] .screen-share-indicator {
   background: #4ade80;
   opacity: 1;
+}
+
+.screen-share-toggle:active .screen-share-indicator {
+  transform: scale(0.85);
 }
 
 .keycap {

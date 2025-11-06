@@ -12,7 +12,7 @@ use tauri_plugin_global_shortcut::Code;
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
-
+n
 #[tauri::command]
 fn toggle_window(app: AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -22,7 +22,6 @@ fn toggle_window(app: AppHandle) {
                 let _ = app.emit("window-hidden", ());
             } else {
                 let _ = window.show();
-                let _ = window.set_focus();
                 let _ = app.emit("window-shown", ());
             }
         });
@@ -71,8 +70,6 @@ pub fn run() {
                             if let Some(window) = app.get_webview_window("main") {
                                 if let Ok(visible) = window.is_visible() {
                                     if visible {
-                                        // Ensure window has focus before emitting event
-                                        let _ = window.set_focus();
                                         let _ = app.emit("ask-triggered", ());
                                     }
                                 }
@@ -84,6 +81,33 @@ pub fn run() {
                 })
                 .build(),
         )
+        .setup(|app| {
+            #[cfg(target_os = "macos")]
+            {
+                use cocoa::appkit::{NSApplication, NSApplicationActivationPolicy, NSWindow, NSWindowCollectionBehavior};
+                use cocoa::base::{id, nil};
+
+                unsafe {
+                    // Set app as accessory - no Dock icon, no Cmd+Tab, but can still take focus
+                    let ns_app = NSApplication::sharedApplication(nil);
+                    ns_app.setActivationPolicy_(NSApplicationActivationPolicy::NSApplicationActivationPolicyAccessory);
+                }
+
+                if let Some(window) = app.get_webview_window("main") {
+                    unsafe {
+                        let ns_window = window.ns_window().unwrap() as id;
+
+                        // Configure window behavior for overlay-style app
+                        let mut collection_behavior = ns_window.collectionBehavior();
+                        collection_behavior |= NSWindowCollectionBehavior::NSWindowCollectionBehaviorCanJoinAllSpaces;
+                        collection_behavior |= NSWindowCollectionBehavior::NSWindowCollectionBehaviorStationary;
+                        collection_behavior |= NSWindowCollectionBehavior::NSWindowCollectionBehaviorIgnoresCycle;
+                        ns_window.setCollectionBehavior_(collection_behavior);
+                    }
+                }
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![greet, toggle_window, capture_screen])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
