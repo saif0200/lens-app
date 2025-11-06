@@ -29,6 +29,15 @@ fn toggle_window(app: AppHandle) {
 }
 
 #[tauri::command]
+fn resize_window(app: AppHandle, width: f64, height: f64) {
+    if let Some(window) = app.get_webview_window("main") {
+        use tauri::LogicalSize;
+        let size = LogicalSize::new(width, height);
+        let _ = window.set_size(size);
+    }
+}
+
+#[tauri::command]
 fn capture_screen() -> Result<String, String> {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -108,7 +117,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, toggle_window, capture_screen])
+        .invoke_handler(tauri::generate_handler![greet, toggle_window, resize_window, capture_screen])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

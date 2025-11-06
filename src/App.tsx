@@ -271,6 +271,35 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Dynamically resize window based on state
+    const resizeWindow = async () => {
+      const width = 500;
+      let height: number;
+
+      if (!showInput) {
+        // Pill mode - minimal height (even if chat exists)
+        height = 60;
+      } else if (hasExpanded) {
+        // Chat history visible - full height
+        height = 286;
+      } else {
+        // Just input visible - medium height
+        height = 105;
+      }
+
+      // For entrance: resize immediately so window is ready before CSS animation
+      // For exit: delay resize until after CSS exit animation completes (150ms)
+      const delay = showInput ? 0 : 150;
+
+      setTimeout(async () => {
+        await invoke("resize_window", { width, height });
+      }, delay);
+    };
+
+    void resizeWindow();
+  }, [showInput, hasExpanded]);
+
+  useEffect(() => {
     // Listen for global shortcut event from Rust backend
     const unlisten = listen("ask-triggered", () => {
       handleAsk();
