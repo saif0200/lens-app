@@ -55,16 +55,18 @@ body {
 }
 
 .app {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 12px 0 16px;
+  align-items: stretch;
+  width: min(540px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 12px 12px 16px;
 }
 
 .toolbar {
   display: flex;
   align-items: center;
+  width: 100%;
   gap: var(--segment-gap);
   padding: var(--toolbar-padding);
   background: var(--toolbar-bg);
@@ -287,6 +289,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
 }
 
 .app.with-input .input-container {
@@ -315,8 +318,7 @@ body {
   border-radius: var(--toolbar-radius);
   box-shadow: var(--toolbar-glow), 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--toolbar-border);
-  width: 500px;
-  max-width: 90%;
+  width: 100%;
   overflow: hidden;
   /* Smooth shadow transition on appearance */
   transition: box-shadow 250ms ease;

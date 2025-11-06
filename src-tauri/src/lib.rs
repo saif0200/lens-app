@@ -12,7 +12,7 @@ use tauri_plugin_global_shortcut::Code;
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
-n
+
 #[tauri::command]
 fn toggle_window(app: AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
