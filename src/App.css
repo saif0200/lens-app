@@ -7,11 +7,11 @@
   --anim-fade-duration: var(--anim-duration-medium);
   --anim-ease: cubic-bezier(0.22, 0.9, 0.36, 1);
   /* snappy exit with quick deceleration */
-  --anim-ease-exit: cubic-bezier(0.4, 0, 0.6, 1);
+  --anim-ease-exit: cubic-bezier(0.4, 0, 0.2, 1);
   /* smooth entrance ease - no overshoot */
   --anim-ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
   /* shorter exit duration to make hide faster than show */
-  --anim-exit-duration: 150ms;
+  --anim-exit-duration: 180ms;
   --bg-transparent: transparent;
   --toolbar-bg: rgba(0, 0, 0, 0.75);
   --toolbar-border: rgba(255, 255, 255, 0.15);
@@ -276,7 +276,7 @@ body {
   /* Initial state: scaled down for larger pill - more dramatic entrance */
   transform: scale(0.92);
   transform-origin: top center;
-  filter: blur(8px);
+  filter: blur(12px);
   /* Exit animation: snappy and quick */
   transition:
     max-height var(--anim-exit-duration) var(--anim-ease-exit),
@@ -294,18 +294,18 @@ body {
 
 .app.with-input .input-container {
   /* Final visible state: fully expanded with no blur */
-  max-height: 310px;
+  max-height: 300px;
   opacity: 1;
   transform: scale(1);
   filter: blur(0px);
   margin-top: 8px;
   /* Entrance animation: smooth scale-up for larger pill */
   transition:
-    max-height 350ms var(--anim-ease-entrance),
-    transform 350ms var(--anim-ease-entrance),
-    margin-top 350ms var(--anim-ease-entrance),
-    filter 200ms var(--anim-ease-entrance) 80ms,
-    opacity 280ms var(--anim-ease-entrance) 20ms;
+    max-height 320ms var(--anim-ease-entrance),
+    transform 320ms var(--anim-ease-entrance),
+    margin-top 320ms var(--anim-ease-entrance),
+    filter 220ms var(--anim-ease-entrance) 80ms,
+    opacity 260ms var(--anim-ease-entrance) 20ms;
 }
 
 /* optional subtle entrance/exit keyframes for browsers that prefer animation over transition */
@@ -325,7 +325,7 @@ body {
 }
 
 .chat-wrapper.expanded {
-  max-height: 310px;
+  max-height: 300px;
 }
 
 .input-area {
@@ -362,7 +362,7 @@ body {
   border-radius: var(--segment-radius);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 
 .send-button:hover {
@@ -374,10 +374,30 @@ body {
   background: var(--segment-active);
 }
 
+.send-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.send-button:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
 .send-button svg {
   width: 20px;
   height: 20px;
   fill: currentColor;
+}
+
+.stop-button {
+  color: #ef4444;
+}
+
+.stop-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
 }
 
 .messages-area {
@@ -397,23 +417,19 @@ body {
   mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(0, 0, 0, 0.3) 3%,
-    rgba(0, 0, 0, 0.6) 8%,
-    black 15%,
-    black 85%,
-    rgba(0, 0, 0, 0.6) 92%,
-    rgba(0, 0, 0, 0.3) 97%,
+    rgba(0, 0, 0, 0.5) 2%,
+    black 8%,
+    black 92%,
+    rgba(0, 0, 0, 0.5) 98%,
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(0, 0, 0, 0.3) 3%,
-    rgba(0, 0, 0, 0.6) 8%,
-    black 15%,
-    black 85%,
-    rgba(0, 0, 0, 0.6) 92%,
-    rgba(0, 0, 0, 0.3) 97%,
+    rgba(0, 0, 0, 0.5) 2%,
+    black 8%,
+    black 92%,
+    rgba(0, 0, 0, 0.5) 98%,
     transparent 100%
   );
 }

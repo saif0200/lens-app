@@ -83,10 +83,12 @@ function App() {
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
   const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
   const lastScrollKeyRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const isMac =
     typeof navigator !== "undefined"
       ? navigator.platform.toUpperCase().includes("MAC")
@@ -160,11 +162,22 @@ function App() {
     }, 150);
   };
 
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsGenerating(false);
+    // Remove typing indicator
+    setMessages((prev) => prev.filter(msg => msg.type !== 'typing'));
+  };
+
   const handleSendMessage = async () => {
-    if (inputValue.trim() === "") return;
+    if (inputValue.trim() === "" || isGenerating) return;
 
     const messageText = inputValue;
     setInputValue("");
+    setIsGenerating(true);
 
     let screenshotBase64: string | null = null;
     let screenshotIncluded = false;
@@ -208,6 +221,9 @@ function App() {
 
     setMessages((prev) => [...prev, typingMessage]);
 
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController();
+
     // Convert conversation history to format expected by Gemini
     const conversationHistory = messages
       .filter(msg => msg.type !== 'typing')
@@ -231,19 +247,29 @@ function App() {
         setMessages((prev) =>
           prev.filter(msg => msg.id !== typingId).concat(aiMessage)
         );
+        setIsGenerating(false);
+        abortControllerRef.current = null;
       })
       .catch((error) => {
         // Handle errors by showing error message
         console.error('Gemini API error:', error);
-        const errorMessage: Message = {
-          id: Date.now(),
-          text: "Sorry, I couldn't process that request. Please try again.",
-          timestamp: new Date(),
-          type: 'ai',
-        };
-        setMessages((prev) =>
-          prev.filter(msg => msg.id !== typingId).concat(errorMessage)
-        );
+
+        // Don't show error if request was aborted
+        if (error.name === 'AbortError') {
+          setMessages((prev) => prev.filter(msg => msg.id !== typingId));
+        } else {
+          const errorMessage: Message = {
+            id: Date.now(),
+            text: "Sorry, I couldn't process that request. Please try again.",
+            timestamp: new Date(),
+            type: 'ai',
+          };
+          setMessages((prev) =>
+            prev.filter(msg => msg.id !== typingId).concat(errorMessage)
+          );
+        }
+        setIsGenerating(false);
+        abortControllerRef.current = null;
       });
   };
 
@@ -281,15 +307,15 @@ function App() {
         height = 60;
       } else if (hasExpanded) {
         // Chat history visible - full height
-        height = 286;
+        height = 305;
       } else {
         // Just input visible - medium height
         height = 105;
       }
 
       // For entrance: resize immediately so window is ready before CSS animation
-      // For exit: delay resize until after CSS exit animation completes (150ms)
-      const delay = showInput ? 0 : 150;
+      // For exit: delay resize until after CSS exit animation completes
+      const delay = showInput ? 0 : 180;
 
       setTimeout(async () => {
         await invoke("resize_window", { width, height });
@@ -365,10 +391,14 @@ function App() {
     lastScrollKeyRef.current = scrollTargetKey;
 
     requestAnimationFrame(() => {
-      node.scrollIntoView({
-        behavior: scrollTargetMessage?.type === "typing" ? "auto" : "smooth",
-        block: "end",
-      });
+      // Scroll the parent messages-area container all the way to the bottom
+      const messagesContainer = node.parentElement;
+      if (messagesContainer) {
+        messagesContainer.scrollTo({
+          top: messagesContainer.scrollHeight,
+          behavior: scrollTargetMessage?.type === "typing" ? "auto" : "smooth",
+        });
+      }
     });
   }, [scrollTargetKey]);
 
@@ -560,27 +590,54 @@ function App() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={`Ask about your screen or conversation, or ${modKey} ↵ for Assist`}
+              disabled={isGenerating}
             />
-            <button
-              className="send-button"
-              aria-label="Send"
-              onClick={() => {
-                void handleSendMessage();
-              }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            {isGenerating ? (
+              <button
+                className="send-button stop-button"
+                aria-label="Stop"
+                onClick={handleStopGeneration}
               >
-                <path
-                  d="M4.5 19.5L21.5 12L4.5 4.5V10.5L15.5 12L4.5 13.5V19.5Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect
+                    x="6"
+                    y="6"
+                    width="12"
+                    height="12"
+                    rx="2"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            ) : (
+              <button
+                className="send-button"
+                aria-label="Send"
+                onClick={() => {
+                  void handleSendMessage();
+                }}
+                disabled={inputValue.trim() === ""}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M4.5 19.5L21.5 12L4.5 4.5V10.5L15.5 12L4.5 13.5V19.5Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
