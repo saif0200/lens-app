@@ -8,6 +8,19 @@ import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { sendMessageToGemini } from "./gemini";
 
+type MathJaxObject = {
+  typesetPromise?: (elements?: (Element | Document)[]) => Promise<void>;
+  typeset?: (elements?: (Element | Document)[]) => void;
+  typesetClear?: (elements?: (Element | Document)[]) => void;
+  startup?: {
+    promise?: Promise<unknown>;
+  };
+};
+
+type MathJaxWindow = Window & {
+  MathJax?: MathJaxObject;
+};
+
 interface Message {
   id: number;
   text: string;
@@ -295,6 +308,81 @@ function App() {
       unlistenHide.then((fn) => fn());
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const script = document.getElementById("mathjax-script");
+    if (!(script instanceof HTMLScriptElement)) {
+      return;
+    }
+
+    const handleLoad = () => {
+      const mathJax = (window as MathJaxWindow).MathJax;
+      if (!mathJax) {
+        return;
+      }
+
+      const startupPromise = mathJax.startup?.promise ?? Promise.resolve();
+      void startupPromise
+        .then(() => {
+          if (typeof mathJax.typesetPromise === "function") {
+            return mathJax.typesetPromise();
+          }
+          mathJax.typeset?.();
+          return undefined;
+        })
+        .catch((error) => {
+          console.error("MathJax initial typeset failed:", error);
+        });
+    };
+
+    if ((window as MathJaxWindow).MathJax?.typesetPromise) {
+      handleLoad();
+      return;
+    }
+
+    script.addEventListener("load", handleLoad);
+    return () => {
+      script.removeEventListener("load", handleLoad);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!messages.some((message) => message.type === 'ai')) {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const mathJax = (window as MathJaxWindow).MathJax;
+      if (!mathJax) {
+        return;
+      }
+
+      const startupPromise = mathJax.startup?.promise ?? Promise.resolve();
+      void startupPromise
+        .then(() => {
+          if (typeof mathJax.typesetPromise === "function") {
+            return mathJax.typesetPromise();
+          }
+          mathJax.typeset?.();
+          return undefined;
+        })
+        .catch((error) => {
+          console.error("MathJax typeset failed:", error);
+        });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [messages]);
 
   useEffect(() => {
     // Dynamically resize window based on state

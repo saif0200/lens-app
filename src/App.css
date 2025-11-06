@@ -629,6 +629,16 @@ body {
   color: rgba(255, 255, 255, 0.8);
 }
 
+.ai-text .ai-markdown mjx-container[display="true"] {
+  display: block;
+  margin: 10px 0;
+  overflow-x: auto;
+}
+
+.ai-text .ai-markdown mjx-container[display="true"] > svg {
+  max-width: 100%;
+}
+
 .ai-code-inline {
   display: inline;
   padding: 1px 4px;
