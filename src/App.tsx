@@ -238,7 +238,6 @@ function App() {
     // Expand chat on first message
     if (!hasExpanded) {
       setHasExpanded(true);
-      setShowInput(true);
     }
 
     // Add typing indicator
