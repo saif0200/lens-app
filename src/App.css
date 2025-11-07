@@ -212,43 +212,27 @@ body {
 }
 
 .reset-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
-  background: var(--toolbar-bg);
-  border: 1px solid var(--toolbar-border);
+  padding: 0;
+  margin-left: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
-  position: absolute;
-  right: -32px;
-  box-shadow: var(--toolbar-glow), 0 4px 16px rgba(0, 0, 0, 0.15);
-  /* Hidden state - clean fade out */
-  opacity: 0;
-  transform: scale(0.92);
-  filter: blur(1px);
-  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   transition:
-    opacity 150ms var(--anim-ease-exit),
-    transform 150ms var(--anim-ease-exit),
-    filter 150ms var(--anim-ease-exit),
-    background 0.2s ease,
-    color 0.2s ease;
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   -webkit-app-region: no-drag;
-}
-
-.reset-button.visible {
-  /* Visible state - clean smooth appearance */
-  opacity: 1;
-  transform: scale(1);
-  filter: blur(0px);
-  pointer-events: auto;
-  transition:
-    opacity 280ms var(--anim-ease-entrance),
-    transform 280ms var(--anim-ease-entrance),
-    filter 240ms var(--anim-ease-entrance);
+  flex-shrink: 0;
+  line-height: 0;
 }
 
 .reset-button:hover {
@@ -267,6 +251,7 @@ body {
 
 .reset-button svg {
   pointer-events: none;
+  display: block;
 }
 
 .input-container {

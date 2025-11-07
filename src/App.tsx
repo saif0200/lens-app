@@ -507,6 +507,7 @@ function App() {
       }
     });
   }, [scrollTargetKey]);
+  const shouldShowResetButton = messages.length > 0 && showInput;
 
   return (
     <div className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}>
@@ -577,49 +578,51 @@ function App() {
           <span className="keycap">\</span>
         </button>
 
-        <button
-          className="toolbar-segment toolbar-menu"
-          data-tauri-drag-region-disabled
-          aria-label="Menu (inactive)"
-          title="More options"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
+        {shouldShowResetButton ? (
+          <button
+            className="toolbar-segment toolbar-menu reset-button"
+            data-tauri-drag-region-disabled
+            aria-label="Reset chat"
+            title="Reset chat"
+            onClick={handleResetChat}
           >
-            <circle cx="8" cy="3" r="1.5" fill="currentColor" />
-            <circle cx="8" cy="8" r="1.5" fill="currentColor" />
-            <circle cx="8" cy="13" r="1.5" fill="currentColor" />
-          </svg>
-        </button>
-
-        <button
-          className={`reset-button ${messages.length > 0 && showInput ? "visible" : ""}`}
-          data-tauri-drag-region-disabled
-          aria-label="Reset chat"
-          title="Reset chat"
-          onClick={handleResetChat}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M2 2L10 10M10 2L2 10"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        ) : (
+          <button
+            className="toolbar-segment toolbar-menu"
+            data-tauri-drag-region-disabled
+            aria-label="Menu (inactive)"
+            title="More options"
           >
-            <path
-              d="M2 2L10 10M10 2L2 10"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <circle cx="8" cy="3" r="1.5" fill="currentColor" />
+              <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+              <circle cx="8" cy="13" r="1.5" fill="currentColor" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="input-container">
