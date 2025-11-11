@@ -463,6 +463,11 @@ body {
   align-items: flex-start;
 }
 
+.scroll-spacer {
+  min-height: 0;
+  flex-shrink: 0;
+}
+
 .message-text {
   background: var(--segment-hover);
   padding: 10px 14px;

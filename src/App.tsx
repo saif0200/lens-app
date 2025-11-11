@@ -497,12 +497,23 @@ function App() {
     lastScrollKeyRef.current = scrollTargetKey;
 
     requestAnimationFrame(() => {
-      // Scroll the parent messages-area container all the way to the bottom
+      // Dynamically set spacer height based on viewport and last AI message
       const messagesContainer = node.parentElement;
       if (messagesContainer) {
-        messagesContainer.scrollTo({
-          top: messagesContainer.scrollHeight,
-          behavior: scrollTargetMessage?.type === "typing" ? "auto" : "smooth",
+        const lastAiMessage = messagesContainer.querySelector('.message-ai:last-of-type');
+        const viewportHeight = messagesContainer.clientHeight; // Height of visible area
+        const messageHeight = lastAiMessage ? lastAiMessage.scrollHeight : 0;
+        // Spacer should be at least 50% of viewport or message height + 20px, whichever is larger
+        const spacerHeight = Math.max(viewportHeight * 0.5, messageHeight + 20);
+        node.style.minHeight = `${spacerHeight}px`;
+      }
+
+      // Only scroll for typing indicator and user messages, not AI messages
+      if (scrollTargetMessage?.type !== "ai") {
+        node.scrollIntoView({
+          behavior: scrollTargetMessage?.type === "typing" ? "smooth" : "auto",
+          block: "end",
+          inline: "nearest"
         });
       }
     });
@@ -688,7 +699,7 @@ function App() {
                     )}
                 </div>
               ))}
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} className="scroll-spacer" />
             </div>
           )}
           <div className="input-area">
