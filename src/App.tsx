@@ -71,7 +71,6 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
-  const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [copiedCodeBlockId, setCopiedCodeBlockId] = useState<string | null>(null);
@@ -276,26 +275,12 @@ function App() {
   };
 
   const handleScreenShareToggle = async () => {
-    if (isCapturingScreenshot) {
-      return;
-    }
-
     if (isScreenShareEnabled) {
       setIsScreenShareEnabled(false);
       return;
     }
 
-    setIsCapturingScreenshot(true);
-    try {
-      const screenshot = await captureScreenshot();
-      if (screenshot) {
-        setIsScreenShareEnabled(true);
-      } else {
-        console.warn("Screenshot capture did not return data; screen share remains off.");
-      }
-    } finally {
-      setIsCapturingScreenshot(false);
-    }
+    setIsScreenShareEnabled(true);
   };
 
   const captureScreenshot = async (): Promise<string | null> => {
@@ -624,7 +609,7 @@ function App() {
       unlistenAsk.then((fn) => fn());
       unlistenScreenShare.then((fn) => fn());
     };
-  }, [showInput, isWindowVisible, isScreenShareEnabled, isCapturingScreenshot]); // Re-create when visibility or screen share state changes
+  }, [showInput, isWindowVisible, isScreenShareEnabled]); // Re-create when visibility or screen share state changes
 
   useEffect(() => {
     // Listen for ESC key to reset chat
@@ -749,13 +734,10 @@ function App() {
           onClick={() => {
             void handleScreenShareToggle();
           }}
-          disabled={isCapturingScreenshot}
           title={
-            isCapturingScreenshot
-              ? "Capturing your screen..."
-              : isScreenShareEnabled
-                ? "Stop sharing your current screen capture"
-                : "Capture your screen for the next message"
+            isScreenShareEnabled
+              ? "Stop sharing your current screen capture"
+              : "Capture your screen for the next message"
           }
         >
           <span className="action-label">Share Screen</span>
