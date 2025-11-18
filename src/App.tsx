@@ -170,11 +170,17 @@ function App() {
     // Prevent rapid toggling to avoid animation breaks
     if (isAnimatingRef.current) return;
 
+    // If input is shown but not focused, focus it instead of closing
+    if (showInput && document.activeElement !== inputRef.current) {
+      inputRef.current?.focus();
+      return;
+    }
+
     isAnimatingRef.current = true;
     setShowInput(!showInput);
 
     // Reset animation lock after animation completes (350ms entrance, 150ms exit)
-    const animDuration = showInput ? 150 : 350;
+    const animDuration = !showInput ? 350 : 150;
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, animDuration);
