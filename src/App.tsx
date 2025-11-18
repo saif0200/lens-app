@@ -271,7 +271,14 @@ function App() {
   } satisfies Components;
 
   const handleToggleWindow = () => {
+    if (isAnimatingRef.current) return;
+
+    isAnimatingRef.current = true;
     invoke("toggle_window");
+
+    setTimeout(() => {
+      isAnimatingRef.current = false;
+    }, 300);
   };
 
   const handleScreenShareToggle = async () => {
@@ -605,9 +612,14 @@ function App() {
       void handleScreenShareToggle();
     });
 
+    const unlistenToggleWindow = listen("toggle-window-triggered", () => {
+      handleToggleWindow();
+    });
+
     return () => {
       unlistenAsk.then((fn) => fn());
       unlistenScreenShare.then((fn) => fn());
+      unlistenToggleWindow.then((fn) => fn());
     };
   }, [showInput, isWindowVisible, isScreenShareEnabled]); // Re-create when visibility or screen share state changes
 

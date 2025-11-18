@@ -85,7 +85,7 @@ pub fn run() {
                                 }
                             }
                         } else if shortcut.key == Code::Backslash {
-                            toggle_window(app.clone());
+                            let _ = app.emit("toggle-window-triggered", ());
                         } else if shortcut.key == Code::KeyS {
                             // Emit screen-share-triggered event
                             if let Some(window) = app.get_webview_window("main") {
