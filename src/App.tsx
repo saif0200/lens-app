@@ -170,12 +170,6 @@ function App() {
     // Prevent rapid toggling to avoid animation breaks
     if (isAnimatingRef.current) return;
 
-    // If input is shown but not focused, focus it instead of closing
-    if (showInput && document.activeElement !== inputRef.current) {
-      inputRef.current?.focus();
-      return;
-    }
-
     isAnimatingRef.current = true;
     setShowInput(!showInput);
 
@@ -411,7 +405,7 @@ function App() {
   useEffect(() => {
     // Dynamically resize window based on state
     const resizeWindow = async () => {
-      const width = 500;
+      const width = 545;
       let height: number;
 
       if (!showInput) {
@@ -439,14 +433,19 @@ function App() {
 
   useEffect(() => {
     // Listen for global shortcut event from Rust backend
-    const unlisten = listen("ask-triggered", () => {
+    const unlistenAsk = listen("ask-triggered", () => {
       handleAsk();
     });
 
+    const unlistenScreenShare = listen("screen-share-triggered", () => {
+      void handleScreenShareToggle();
+    });
+
     return () => {
-      unlisten.then((fn) => fn());
+      unlistenAsk.then((fn) => fn());
+      unlistenScreenShare.then((fn) => fn());
     };
-  }, [showInput, isWindowVisible]); // Re-create when visibility changes
+  }, [showInput, isWindowVisible, isScreenShareEnabled, isCapturingScreenshot]); // Re-create when visibility or screen share state changes
 
   useEffect(() => {
     // Listen for ESC key to reset chat
@@ -556,7 +555,7 @@ function App() {
           className="toolbar-segment toolbar-action"
           data-tauri-drag-region-disabled
           aria-label="Ask"
-          onClick={handleAsk}
+          onClick={() => handleAsk()}
         >
           <span className="action-label">Ask</span>
           <span className="keycap">{modKey}</span>
@@ -581,6 +580,8 @@ function App() {
           }
         >
           <span className="action-label">Share Screen</span>
+          <span className="keycap">{modKey}</span>
+          <span className="keycap">S</span>
           <span className="screen-share-indicator" aria-hidden="true" />
         </button>
 

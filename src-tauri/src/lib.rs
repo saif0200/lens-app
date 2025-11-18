@@ -70,7 +70,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts(["CommandOrControl+Backslash", "CommandOrControl+Enter"])
+                .with_shortcuts(["CommandOrControl+Backslash", "CommandOrControl+Enter", "CommandOrControl+S"])
                 .unwrap()
                 .with_handler(|app, shortcut, event| {
                     if event.state == ShortcutState::Pressed {
@@ -86,6 +86,15 @@ pub fn run() {
                             }
                         } else if shortcut.key == Code::Backslash {
                             toggle_window(app.clone());
+                        } else if shortcut.key == Code::KeyS {
+                            // Emit screen-share-triggered event
+                            if let Some(window) = app.get_webview_window("main") {
+                                if let Ok(visible) = window.is_visible() {
+                                    if visible {
+                                        let _ = app.emit("screen-share-triggered", ());
+                                    }
+                                }
+                            }
                         }
                     }
                 })
