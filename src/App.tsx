@@ -318,8 +318,8 @@ function App() {
     isAnimatingRef.current = true;
     setShowInput(!showInput);
 
-    // Reset animation lock after animation completes (350ms entrance, 150ms exit)
-    const animDuration = !showInput ? 350 : 150;
+    // Reset animation lock after animation completes (380ms entrance, 200ms exit)
+    const animDuration = !showInput ? 380 : 200;
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, animDuration);
@@ -329,13 +329,13 @@ function App() {
     // First, trigger the exit animation by closing the input
     setShowInput(false);
 
-    // Then, after the exit animation completes (150ms), clear the chat state
+    // Then, after the exit animation completes (200ms), clear the chat state
     setTimeout(() => {
       setMessages([]);
       setHasExpanded(false);
       setInputValue("");
       setIsScreenShareEnabled(false);
-    }, 150);
+    }, 200);
   };
 
   const handleStopGeneration = () => {
@@ -600,7 +600,7 @@ function App() {
 
       // For entrance: resize immediately so window is ready before CSS animation
       // For exit: delay resize until after CSS exit animation completes
-      const delay = showInput ? 0 : 180;
+      const delay = showInput ? 0 : 200;
 
       setTimeout(async () => {
         await invoke("resize_window", { width, height });
