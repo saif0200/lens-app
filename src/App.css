@@ -457,6 +457,7 @@ body {
 
 .message-ai {
   align-items: flex-start;
+  position: relative;
 }
 
 .message-typing {
@@ -627,6 +628,52 @@ body {
   border-left: 2px solid rgba(255, 255, 255, 0.2);
   padding-left: 12px;
   color: rgba(255, 255, 255, 0.8);
+}
+
+.message-actions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-start;
+  transition: opacity 200ms var(--anim-ease), transform 200ms var(--anim-ease);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2px);
+}
+
+.ai-text:hover .message-actions,
+.ai-text:focus-within .message-actions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.ai-copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.ai-copy-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.ai-copy-button:hover {
+  color: var(--text-primary);
+}
+
+.ai-copy-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .ai-text .ai-markdown mjx-container[display="true"] {

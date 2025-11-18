@@ -115,11 +115,13 @@ function App() {
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
   const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
   const lastScrollKeyRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const copyResetTimerRef = useRef<number | null>(null);
   const isMac =
     typeof navigator !== "undefined"
       ? navigator.platform.toUpperCase().includes("MAC")
@@ -304,6 +306,29 @@ function App() {
       });
   };
 
+  const handleCopyResponse = async (messageId: number, text: string) => {
+    if (!navigator.clipboard) {
+      console.warn("Clipboard API not available");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(copyResetTimerRef.current);
+      }
+
+      copyResetTimerRef.current = window.setTimeout(() => {
+        setCopiedMessageId((current) => (current === messageId ? null : current));
+        copyResetTimerRef.current = null;
+      }, 800);
+    } catch (error) {
+      console.error("Failed to copy AI response:", error);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -401,6 +426,14 @@ function App() {
       window.clearTimeout(timeoutId);
     };
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current) {
+        window.clearTimeout(copyResetTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Dynamically resize window based on state
@@ -652,58 +685,117 @@ function App() {
                   key={message.id}
                   className={`message message-${message.type}`}
                 >
-                    {message.type === 'user' && (
-                      <>
-                        <div className="message-text">{message.text}</div>
-                        {message.screenshotIncluded && (
-                          <div className="message-screen-note">
-                            <span className="message-screen-note-label">Sent your screen</span>
-                            {message.screenshotData && (
-                              <button
-                                type="button"
-                                className="message-screen-thumb"
-                                aria-label="Preview shared screen"
+                  {message.type === 'user' && (
+                    <>
+                      <div className="message-text">{message.text}</div>
+                      {message.screenshotIncluded && (
+                        <div className="message-screen-note">
+                          <span className="message-screen-note-label">Sent your screen</span>
+                          {message.screenshotData && (
+                            <button
+                              type="button"
+                              className="message-screen-thumb"
+                              aria-label="Preview shared screen"
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
                               >
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <path
-                                    d="M21 19H3C1.9 19 1 18.1 1 17V7C1 5.9 1.9 5 3 5H21C22.1 5 23 5.9 23 7V17C23 18.1 22.1 19 21 19ZM3 7V17H21V7H3ZM9 15C7.34 15 6 13.66 6 12C6 10.34 7.34 9 9 9C10.66 9 12 10.34 12 12C12 13.66 10.66 15 9 15ZM9 11C8.45 11 8 11.45 8 12C8 12.55 8.45 13 9 13C9.55 13 10 12.55 10 12C10 11.45 9.55 11 9 11ZM18 15H13V13H18V15ZM18 11H14V9H18V11Z"
-                                    fill="currentColor"
-                                  />
-                                </svg>
-                                <div className="message-screen-preview">
-                                  <img src={message.screenshotData} alt="Shared screen preview" />
-                                </div>
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {message.type === 'ai' && (
-                      <div className="ai-text">
-                        <div className="ai-markdown">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {message.text}
-                          </ReactMarkdown>
+                                <path
+                                  d="M21 19H3C1.9 19 1 18.1 1 17V7C1 5.9 1.9 5 3 5H21C22.1 5 23 5.9 23 7V17C23 18.1 22.1 19 21 19ZM3 7V17H21V7H3ZM9 15C7.34 15 6 13.66 6 12C6 10.34 7.34 9 9 9C10.66 9 12 10.34 12 12C12 13.66 10.66 15 9 15ZM9 11C8.45 11 8 11.45 8 12C8 12.55 8.45 13 9 13C9.55 13 10 12.55 10 12C10 11.45 9.55 11 9 11ZM18 15H13V13H18V15ZM18 11H14V9H18V11Z"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                              <div className="message-screen-preview">
+                                <img src={message.screenshotData} alt="Shared screen preview" />
+                              </div>
+                            </button>
+                          )}
                         </div>
+                      )}
+                    </>
+                  )}
+                  {message.type === 'ai' && (
+                    <div className="ai-text">
+                      <div className="ai-markdown">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={markdownComponents}
+                        >
+                          {message.text}
+                        </ReactMarkdown>
                       </div>
-                    )}
-                    {message.type === 'typing' && (
-                      <div className="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+                      <div className="message-actions">
+                        <button
+                          type="button"
+                          className={`ai-copy-button ${copiedMessageId === message.id ? "copied" : ""}`}
+                          onClick={() => {
+                            void handleCopyResponse(message.id, message.text);
+                          }}
+                          aria-label="Copy AI response"
+                        >
+                          {copiedMessageId === message.id ? (
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                              aria-hidden="true"
+                            >
+                              <polyline
+                                points="3,8 6,11 13,4"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                fill="none"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                              aria-hidden="true"
+                            >
+                              <rect
+                                x="9"
+                                y="9"
+                                width="13"
+                                height="13"
+                                rx="2"
+                                ry="2"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                fill="none"
+                              />
+                              <path
+                                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                fill="none"
+                              />
+                            </svg>
+                          )}
+                        </button>
                       </div>
-                    )}
+                    </div>
+                  )}
+                  {message.type === 'typing' && (
+                    <div className="typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  )}
                 </div>
               ))}
               <div ref={messagesEndRef} className="scroll-spacer" />
