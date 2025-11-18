@@ -6,6 +6,8 @@ import { listen } from "@tauri-apps/api/event";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { sendMessageToGemini } from "./gemini";
 
 const cleanAiText = (text: string): string => {
@@ -62,50 +64,6 @@ const MarkdownLink = ({ node, ...props }: MarkdownLinkProps) => {
   return <a {...props} target="_blank" rel="noopener noreferrer" />;
 };
 
-const MarkdownCode = ({
-  inline,
-  className,
-  children,
-  node,
-  ...props
-}: MarkdownCodeProps) => {
-  void node;
-  const childText = Array.isArray(children)
-    ? children
-        .map((child) => (typeof child === "string" ? child : ""))
-        .join("")
-    : typeof children === "string"
-      ? children
-      : "";
-
-  const isInline =
-    inline ?? !/\r|\n/.test(childText);
-
-  if (isInline) {
-    const combinedClassName = ["ai-code-inline", className]
-      .filter(Boolean)
-      .join(" ");
-    return (
-      <code className={combinedClassName} {...props}>
-        {children}
-      </code>
-    );
-  }
-
-  return (
-    <div className="ai-code-block">
-      <code className={className ?? ""} {...props}>
-        {children}
-      </code>
-    </div>
-  );
-};
-
-const markdownComponents = {
-  a: MarkdownLink,
-  code: MarkdownCode,
-} satisfies Components;
-
 function App() {
   const [showInput, setShowInput] = useState(false);
   const [hasExpanded, setHasExpanded] = useState(false);
@@ -116,17 +74,202 @@ function App() {
   const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
+  const [copiedCodeBlockId, setCopiedCodeBlockId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
   const lastScrollKeyRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const copyResetTimerRef = useRef<number | null>(null);
+  const codeBlockCopyResetTimerRef = useRef<number | null>(null);
   const isMac =
     typeof navigator !== "undefined"
       ? navigator.platform.toUpperCase().includes("MAC")
       : false;
   const modKey = isMac ? "⌘" : "Ctrl";
+
+  const handleCopyCodeBlock = async (blockId: string, code: string) => {
+    if (!navigator.clipboard) {
+      console.warn("Clipboard API not available");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCodeBlockId(blockId);
+
+      if (codeBlockCopyResetTimerRef.current) {
+        window.clearTimeout(codeBlockCopyResetTimerRef.current);
+      }
+
+      codeBlockCopyResetTimerRef.current = window.setTimeout(() => {
+        setCopiedCodeBlockId((current) => (current === blockId ? null : current));
+        codeBlockCopyResetTimerRef.current = null;
+      }, 800);
+    } catch (error) {
+      console.error("Failed to copy code block:", error);
+    }
+  };
+
+  const MarkdownCode = ({
+    inline,
+    className,
+    children,
+    node,
+    ...props
+  }: MarkdownCodeProps) => {
+    void node;
+    const childText = Array.isArray(children)
+      ? children
+          .map((child) => (typeof child === "string" ? child : ""))
+          .join("")
+      : typeof children === "string"
+        ? children
+        : "";
+
+    const isInline =
+      inline ?? !/\r|\n/.test(childText);
+
+    if (isInline) {
+      const combinedClassName = ["ai-code-inline", className]
+        .filter(Boolean)
+        .join(" ");
+      return (
+        <code className={combinedClassName} {...props}>
+          {children}
+        </code>
+      );
+    }
+
+    // Extract language from className (e.g., "language-javascript" -> "javascript")
+    const match = /language-(\w+)/.exec(className || "");
+    const language = match ? match[1] : "text";
+
+    // Format language name for display
+    const languageDisplayNames: Record<string, string> = {
+      js: "JavaScript",
+      jsx: "JavaScript (JSX)",
+      ts: "TypeScript",
+      tsx: "TypeScript (TSX)",
+      py: "Python",
+      rb: "Ruby",
+      cpp: "C++",
+      cs: "C#",
+      sh: "Shell",
+      bash: "Bash",
+      yml: "YAML",
+      yaml: "YAML",
+      json: "JSON",
+      md: "Markdown",
+      html: "HTML",
+      css: "CSS",
+      scss: "SCSS",
+      sql: "SQL",
+      text: "Plain Text",
+    };
+
+    const languageDisplay = languageDisplayNames[language.toLowerCase()]
+      || language.charAt(0).toUpperCase() + language.slice(1);
+
+    // Generate unique ID for this code block based on content hash
+    const blockId = `code-${childText.length}-${childText.substring(0, 20).replace(/\s/g, '')}`;
+
+    return (
+      <div className="ai-code-block-wrapper">
+        <div className="code-block-header">
+          <span className="code-language-tag">{languageDisplay}</span>
+          <button
+            type="button"
+            className="code-copy-button"
+            onClick={() => {
+              void handleCopyCodeBlock(blockId, childText);
+            }}
+            aria-label="Copy code"
+          >
+            {copiedCodeBlockId === blockId ? (
+              <>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <polyline
+                    points="3,8 6,11 13,4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </svg>
+                <span className="code-copy-label">Copied</span>
+              </>
+            ) : (
+              <>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="9"
+                    y="9"
+                    width="13"
+                    height="13"
+                    rx="2"
+                    ry="2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                  <path
+                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </svg>
+                <span className="code-copy-label">Copy code</span>
+              </>
+            )}
+          </button>
+        </div>
+        <div className="ai-code-block">
+          <SyntaxHighlighter
+            language={language}
+            style={vscDarkPlus}
+            customStyle={{
+              margin: 0,
+              padding: 0,
+              background: "transparent",
+              fontSize: "12px",
+              lineHeight: "1.6",
+            }}
+            codeTagProps={{
+              style: {
+                fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+              }
+            }}
+          >
+            {childText}
+          </SyntaxHighlighter>
+        </div>
+      </div>
+    );
+  };
+
+  const markdownComponents = {
+    a: MarkdownLink,
+    code: MarkdownCode,
+  } satisfies Components;
 
   const handleToggleWindow = () => {
     invoke("toggle_window");
@@ -431,6 +574,9 @@ function App() {
     return () => {
       if (copyResetTimerRef.current) {
         window.clearTimeout(copyResetTimerRef.current);
+      }
+      if (codeBlockCopyResetTimerRef.current) {
+        window.clearTimeout(codeBlockCopyResetTimerRef.current);
       }
     };
   }, []);
