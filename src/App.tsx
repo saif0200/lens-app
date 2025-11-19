@@ -684,8 +684,14 @@ function App() {
         const lastAiMessage = messagesContainer.querySelector('.message-ai:last-of-type');
         const viewportHeight = messagesContainer.clientHeight; // Height of visible area
         const messageHeight = lastAiMessage ? lastAiMessage.scrollHeight : 0;
-        // Spacer should be at least 50% of viewport or message height + 20px, whichever is larger
-        const spacerHeight = Math.max(viewportHeight * 0.5, messageHeight + 20);
+
+        // Check if the last user message has an attachment
+        const lastUserMessage = messages.filter(m => m.type === 'user').pop();
+        const hasAttachment = lastUserMessage?.screenshotIncluded ?? false;
+
+        // Reduce spacer height if there's an attachment (30% instead of 50%)
+        const spacerMultiplier = hasAttachment ? 0.3 : 0.5;
+        const spacerHeight = Math.max(viewportHeight * spacerMultiplier, messageHeight + 20);
         node.style.minHeight = `${spacerHeight}px`;
       }
 
@@ -698,7 +704,7 @@ function App() {
         });
       }
     });
-  }, [scrollTargetKey]);
+  }, [scrollTargetKey, messages]);
   const shouldShowResetButton = messages.length > 0 && showInput;
 
   return (
