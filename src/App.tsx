@@ -301,6 +301,29 @@ function App() {
     }
   };
 
+  const handleAskButton = () => {
+    // Don't allow ask to work when window is hidden
+    if (!isWindowVisible) return;
+
+    // Prevent rapid toggling to avoid animation breaks
+    if (isAnimatingRef.current) return;
+
+    // Simple toggle for button clicks
+    if (showInput) {
+      isAnimatingRef.current = true;
+      setShowInput(false);
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+      }, 200);
+    } else {
+      isAnimatingRef.current = true;
+      setShowInput(true);
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+      }, 380);
+    }
+  };
+
   const handleAsk = (forcedFocus = false) => {
     // Don't allow ask to work when window is hidden
     if (!isWindowVisible) return;
@@ -781,7 +804,7 @@ function App() {
           className="toolbar-segment toolbar-action"
           data-tauri-drag-region-disabled
           aria-label="Ask"
-          onClick={() => handleAsk()}
+          onClick={handleAskButton}
         >
           <span className="action-label">Ask</span>
           <span className="keycap">{modKey}</span>
