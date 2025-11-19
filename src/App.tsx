@@ -81,6 +81,7 @@ function App() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const copyResetTimerRef = useRef<number | null>(null);
   const codeBlockCopyResetTimerRef = useRef<number | null>(null);
+  const lastFocusTimeRef = useRef(0);
   const isMac =
     typeof navigator !== "undefined"
       ? navigator.platform.toUpperCase().includes("MAC")
@@ -300,21 +301,38 @@ function App() {
     }
   };
 
-  const handleAsk = () => {
+  const handleAsk = (forcedFocus = false) => {
     // Don't allow ask to work when window is hidden
     if (!isWindowVisible) return;
 
     // Prevent rapid toggling to avoid animation breaks
     if (isAnimatingRef.current) return;
 
-    isAnimatingRef.current = true;
-    setShowInput(!showInput);
+    const isInputFocused = document.activeElement === inputRef.current;
+    const timeSinceFocus = Date.now() - lastFocusTimeRef.current;
+    // If window just got focus (within 200ms) OR we forced focus from Rust
+    const justGainedFocus = timeSinceFocus < 200 || forcedFocus;
 
-    // Reset animation lock after animation completes (380ms entrance, 200ms exit)
-    const animDuration = !showInput ? 380 : 200;
-    setTimeout(() => {
-      isAnimatingRef.current = false;
-    }, animDuration);
+    if (showInput && isInputFocused && !justGainedFocus) {
+      isAnimatingRef.current = true;
+      setShowInput(false);
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+      }, 200);
+    } else if (!showInput) {
+      isAnimatingRef.current = true;
+      setShowInput(true);
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+      }, 380);
+    } else {
+      inputRef.current?.focus();
+      // Add a small lockout to prevent double-triggering
+      isAnimatingRef.current = true;
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+      }, 100);
+    }
   };
 
   const handleResetChat = () => {
@@ -488,6 +506,16 @@ function App() {
   };
 
   useEffect(() => {
+    const handleFocus = () => {
+      lastFocusTimeRef.current = Date.now();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
+
+  useEffect(() => {
     // Listen for window visibility events
     const unlistenShow = listen("window-shown", () => {
       setIsWindowVisible(true);
@@ -620,8 +648,8 @@ function App() {
 
   useEffect(() => {
     // Listen for global shortcut event from Rust backend
-    const unlistenAsk = listen("ask-triggered", () => {
-      handleAsk();
+    const unlistenAsk = listen<boolean>("ask-triggered", (event) => {
+      handleAsk(event.payload);
     });
 
     const unlistenScreenShare = listen("screen-share-triggered", () => {

@@ -79,8 +79,9 @@ pub fn run() {
                             if let Some(window) = app.get_webview_window("main") {
                                 if let Ok(visible) = window.is_visible() {
                                     if visible {
+                                        let is_focused = window.is_focused().unwrap_or(false);
                                         let _ = window.set_focus();
-                                        let _ = app.emit("ask-triggered", ());
+                                        let _ = app.emit("ask-triggered", !is_focused);
                                     }
                                 }
                             }
