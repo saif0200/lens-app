@@ -14,9 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest' # Apple Silicon
-          - platform: 'macos-13'     # Intel
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-13'
+            args: '--target x86_64-apple-darwin'
           - platform: 'windows-latest'
+            args: ''
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -40,15 +43,25 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build the app
-        uses: tauri-apps/tauri-action@v0
+      - name: Build the app (Tauri bundle)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          # Build frontend first (tauri build runs the frontend build as configured)
+          npm run build
+
+          # Run Tauri build. Pass per-job args from the matrix when provided.
+          if [ -n "${{ matrix.args }}" ]; then
+            npm run tauri -- build -- ${{ matrix.args }}
+          else
+            npm run tauri -- build
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'App v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
+          name: build-artifacts-${{ matrix.platform }}-${{ github.ref_name }}
+          path: |
+            src-tauri/target/release/bundle/**
+            src-tauri/target/release/*lens-app*
