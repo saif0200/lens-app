@@ -207,7 +207,12 @@ body {
   font-weight: 600;
   color: var(--text-secondary);
   line-height: 1;
-  padding-top: 1px;
+  padding-bottom: 2px;
+}
+
+.keycap-enter {
+  padding-bottom: 0;
+  padding-top: 2px;
 }
 
 .toolbar-menu {

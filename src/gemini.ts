@@ -33,12 +33,14 @@ export interface Message {
  * @param message - The user's message
  * @param conversationHistory - Array of previous messages (last 4-8 messages recommended)
  * @param screenshotBase64 - Optional base64-encoded PNG screenshot to share with Gemini
+ * @param abortSignal - Optional abort signal to cancel the request
  * @returns Promise that resolves with the complete response text
  */
 export async function sendMessageToGemini(
   message: string,
   conversationHistory: Message[],
-  screenshotBase64?: string
+  screenshotBase64?: string,
+  abortSignal?: AbortSignal
 ): Promise<string> {
   try {
     // Format conversation history for Gemini API
@@ -78,6 +80,7 @@ export async function sendMessageToGemini(
       contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTIONS,
+        abortSignal,
       },
     });
 

@@ -336,8 +336,17 @@ function App() {
       abortControllerRef.current = null;
     }
     setIsGenerating(false);
-    // Remove typing indicator
-    setMessages((prev) => prev.filter(msg => msg.type !== 'typing'));
+    // Replace typing indicator with stopped message
+    setMessages((prev) => {
+      const withoutTyping = prev.filter(msg => msg.type !== 'typing');
+      const stoppedMessage: Message = {
+        id: Date.now(),
+        text: "Response stopped.",
+        timestamp: new Date(),
+        type: 'ai',
+      };
+      return [...withoutTyping, stoppedMessage];
+    });
   };
 
   const handleSendMessage = async () => {
@@ -402,7 +411,12 @@ function App() {
       }));
 
     // Call Gemini and wait for complete response
-    sendMessageToGemini(userMessage.text, conversationHistory, screenshotBase64 ?? undefined)
+    sendMessageToGemini(
+      userMessage.text,
+      conversationHistory,
+      screenshotBase64 ?? undefined,
+      abortControllerRef.current.signal
+    )
       .then((responseText) => {
         const cleanedResponse = cleanAiText(responseText);
         const aiMessage: Message = {
@@ -422,20 +436,22 @@ function App() {
         // Handle errors by showing error message
         console.error('Gemini API error:', error);
 
-        // Don't show error if request was aborted
-        if (error.name === 'AbortError') {
-          setMessages((prev) => prev.filter(msg => msg.id !== typingId));
-        } else {
-          const errorMessage: Message = {
-            id: Date.now(),
-            text: "Sorry, I couldn't process that request. Please try again.",
-            timestamp: new Date(),
-            type: 'ai',
-          };
-          setMessages((prev) =>
-            prev.filter(msg => msg.id !== typingId).concat(errorMessage)
-          );
+        // Don't do anything if request was aborted - handleStopGeneration already handled it
+        if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+          // Already handled by handleStopGeneration
+          return;
         }
+
+        // Show error message for other errors
+        const errorMessage: Message = {
+          id: Date.now(),
+          text: "Sorry, I couldn't process that request. Please try again.",
+          timestamp: new Date(),
+          type: 'ai',
+        };
+        setMessages((prev) =>
+          prev.filter(msg => msg.id !== typingId).concat(errorMessage)
+        );
         setIsGenerating(false);
         abortControllerRef.current = null;
       });
@@ -741,7 +757,7 @@ function App() {
         >
           <span className="action-label">Ask</span>
           <span className="keycap">{modKey}</span>
-          <span className="keycap">↵</span>
+          <span className="keycap keycap-enter">↵</span>
         </button>
 
         <button
