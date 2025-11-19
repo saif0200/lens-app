@@ -63,6 +63,7 @@ body {
   width: min(585px, calc(100% - 24px));
   margin: 0 auto;
   padding: 12px 12px 16px;
+  overflow-x: hidden;
 }
 
 .toolbar {
@@ -407,6 +408,7 @@ body {
 .messages-area {
   flex: 1;
   overflow-y: scroll;
+  overflow-x: hidden;
   padding: 12px;
   padding-bottom: 8px;
   display: flex;

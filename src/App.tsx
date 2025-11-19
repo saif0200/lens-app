@@ -25,7 +25,7 @@ const cleanAiText = (text: string): string => {
     .replace(/([^\s])\s+([.,!?;:])/g, "$1$2")
     .replace(/([^\s])\s+([\)\]\}])/g, "$1$2");
 
-  return tightenedPunctuation.trimEnd();
+  return tightenedPunctuation.trim();
 };
 
 type MathJaxObject = {
