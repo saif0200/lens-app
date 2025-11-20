@@ -8,7 +8,8 @@ import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { sendMessageToGemini } from "./gemini";
+import { sendMessage } from "./ai";
+import { Message, AIProvider } from "./types";
 
 const cleanAiText = (text: string): string => {
   if (!text) {
@@ -25,7 +26,14 @@ const cleanAiText = (text: string): string => {
     .replace(/([^\s])\s+([.,!?;:])/g, "$1$2")
     .replace(/([^\s])\s+([\)\]\}])/g, "$1$2");
 
-  return tightenedPunctuation.trim();
+  // Escape math delimiters so ReactMarkdown doesn't consume the backslashes
+  const escapedMath = tightenedPunctuation
+    .replace(/\\\(/g, "\\\\(")
+    .replace(/\\\)/g, "\\\\)")
+    .replace(/\\\[/g, "\\\\[")
+    .replace(/\\\]/g, "\\\\]");
+
+  return escapedMath.trim();
 };
 
 type MathJaxObject = {
@@ -40,15 +48,6 @@ type MathJaxObject = {
 type MathJaxWindow = Window & {
   MathJax?: MathJaxObject;
 };
-
-interface Message {
-  id: number;
-  text: string;
-  timestamp: Date;
-  type: 'user' | 'ai' | 'typing';
-  screenshotIncluded?: boolean;
-  screenshotData?: string;
-}
 
 type MarkdownLinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   node?: unknown;
@@ -69,6 +68,7 @@ function App() {
   const [hasExpanded, setHasExpanded] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentProvider, setCurrentProvider] = useState<AIProvider>('gemini');
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -441,20 +441,14 @@ function App() {
     // Create abort controller for this request
     abortControllerRef.current = new AbortController();
 
-    // Convert conversation history to format expected by Gemini
-    const conversationHistory = messages
-      .filter(msg => msg.type !== 'typing')
-      .map(msg => ({
-        role: msg.type === 'user' ? 'user' as const : 'model' as const,
-        text: msg.screenshotIncluded
-          ? `${msg.text}\n\n[User shared a screenshot of their screen with this message.]`
-          : msg.text,
-      }));
+    // Filter out typing indicators for history
+    const history = messages.filter(msg => msg.type !== 'typing');
 
-    // Call Gemini and wait for complete response
-    sendMessageToGemini(
+    // Call AI provider and wait for complete response
+    sendMessage(
+      currentProvider,
       userMessage.text,
-      conversationHistory,
+      history,
       screenshotBase64 ?? undefined,
       abortControllerRef.current.signal
     )
@@ -801,6 +795,18 @@ function App() {
         </button>
 
         <button
+          className="toolbar-segment toolbar-action provider-toggle"
+          data-tauri-drag-region-disabled
+          aria-label={`Switch to ${currentProvider === 'gemini' ? 'OpenAI' : 'Gemini'}`}
+          onClick={() => setCurrentProvider(prev => prev === 'gemini' ? 'openai' : 'gemini')}
+          title={`Current provider: ${currentProvider === 'gemini' ? 'Gemini' : 'OpenAI'}`}
+        >
+          <span className="action-label">
+            {currentProvider === 'gemini' ? 'Gemini' : 'OpenAI'}
+          </span>
+        </button>
+
+        <button
           className="toolbar-segment toolbar-action"
           data-tauri-drag-region-disabled
           aria-label="Ask"
@@ -825,7 +831,7 @@ function App() {
               : "Capture your screen for the next message"
           }
         >
-          <span className="action-label">Share Screen</span>
+          <span className="action-label">Share</span>
           <span className="keycap">{modKey}</span>
           <span className="keycap">S</span>
           <span className="screen-share-indicator" aria-hidden="true" />

@@ -26,8 +26,8 @@
   --focus-ring: rgba(99, 179, 237, 0.6);
 
   --toolbar-padding: 4px;
-  --segment-gap: 2px;
-  --segment-padding-x: 10px;
+  --segment-gap: 1px;
+  --segment-padding-x: 8px;
   --segment-padding-y: 6px;
   --keycap-size: 18px;
 
@@ -156,6 +156,11 @@ body {
 
 .action-label {
   font-size: 13px;
+}
+
+.provider-toggle .action-label {
+  min-width: 48px;
+  text-align: center;
 }
 
 .screen-share-toggle {

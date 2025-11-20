@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { Message } from "./types";
 
 // System instructions for the AI assistant
 const SYSTEM_INSTRUCTIONS = `You're a real-time assistant that gives the user info during meetings and other workflows. Your goal is to answer the user's query directly.
@@ -22,11 +23,6 @@ Tone must be natural, human, and conversational:
 const ai = new GoogleGenAI({
   apiKey: import.meta.env.VITE_GOOGLE_GENAI_API_KEY,
 });
-
-export interface Message {
-  role: "user" | "model";
-  text: string;
-}
 
 /**
  * Sends a message to Gemini and returns the complete response
@@ -64,7 +60,7 @@ export async function sendMessageToGemini(
     const contents = [
       // Add conversation history
       ...recentHistory.map((msg) => ({
-        role: msg.role,
+        role: msg.type === 'user' ? 'user' : 'model',
         parts: [{ text: msg.text }],
       })),
       // Add current message
