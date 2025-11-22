@@ -63,12 +63,28 @@ const MarkdownLink = ({ node, ...props }: MarkdownLinkProps) => {
   return <a {...props} target="_blank" rel="noopener noreferrer" />;
 };
 
+const OPENAI_MODELS = [
+  { id: 'gpt-5-nano', name: 'GPT-5 nano' },
+  { id: 'gpt-5-mini', name: 'GPT-5 mini' },
+  { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex' },
+  { id: 'gpt-5.1', name: 'GPT-5.1' },
+  { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex mini' },
+];
+
+const GEMINI_MODELS = [
+  { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash' },
+  { id: 'gemini-flash-lite-latest', name: 'Gemini 2.5 Flash-Lite' },
+  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro Preview' },
+];
+
 function App() {
   const [showInput, setShowInput] = useState(false);
   const [hasExpanded, setHasExpanded] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentProvider, setCurrentProvider] = useState<AIProvider>('gemini');
+  const [openaiModel, setOpenaiModel] = useState(OPENAI_MODELS[0].id);
+  const [geminiModel, setGeminiModel] = useState(GEMINI_MODELS[0].id);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('low');
   const [isGeminiThinkingEnabled, setIsGeminiThinkingEnabled] = useState(false);
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
@@ -484,7 +500,8 @@ function App() {
       {
         reasoningEffort,
         thinkingEnabled: isGeminiThinkingEnabled,
-        webSearchEnabled: isWebSearchEnabled
+        webSearchEnabled: isWebSearchEnabled,
+        model: currentProvider === 'openai' ? openaiModel : geminiModel
       }
     )
       .then((response) => {
@@ -877,11 +894,25 @@ function App() {
 
   const cycleReasoningEffort = () => {
     setReasoningEffort((prev) => {
+      if (currentProvider === 'gemini' && geminiModel.includes('gemini-3-pro')) {
+        return prev === 'low' ? 'high' : 'low';
+      }
       if (prev === 'low') return 'medium';
       if (prev === 'medium') return 'high';
       return 'low';
     });
   };
+
+  const currentModelId = currentProvider === 'openai' ? openaiModel : geminiModel;
+  const currentModels = currentProvider === 'openai' ? OPENAI_MODELS : GEMINI_MODELS;
+  const currentModelName = currentModels.find(m => m.id === currentModelId)?.name || currentModelId;
+
+  useEffect(() => {
+    // Ensure reasoning effort is valid for Gemini 3 Pro (only low/high)
+    if (currentProvider === 'gemini' && geminiModel.includes('gemini-3-pro') && reasoningEffort === 'medium') {
+      setReasoningEffort('low');
+    }
+  }, [currentProvider, geminiModel, reasoningEffort]);
 
   return (
     <div className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}>
@@ -1286,7 +1317,7 @@ function App() {
                 <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            {currentProvider === 'openai' ? (
+            {(currentProvider === 'openai' || (currentProvider === 'gemini' && geminiModel.includes('gemini-3-pro'))) ? (
               <button
                 className={`reasoning-toggle effort-${reasoningEffort}`}
                 onClick={cycleReasoningEffort}
@@ -1315,10 +1346,13 @@ function App() {
                   {reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1)}
                 </span>
               </button>
-            ) : (
+            ) : (currentProvider === 'gemini') ? (
               <button
                 className={`web-search-toggle ${isGeminiThinkingEnabled ? 'active' : ''}`}
-                onClick={() => setIsGeminiThinkingEnabled(!isGeminiThinkingEnabled)}
+                onClick={() => {
+                  const newState = !isGeminiThinkingEnabled;
+                  setIsGeminiThinkingEnabled(newState);
+                }}
                 title={`Thinking: ${isGeminiThinkingEnabled ? 'On' : 'Off'}`}
                 aria-label="Toggle thinking"
                 aria-pressed={isGeminiThinkingEnabled}
@@ -1329,7 +1363,7 @@ function App() {
                 </svg>
                 <span className="reasoning-label">Thinking</span>
               </button>
-            )}
+            ) : null}
             <button
               className={`web-search-toggle ${isWebSearchEnabled ? 'active' : ''}`}
               onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
@@ -1343,6 +1377,30 @@ function App() {
               </svg>
               <span className="reasoning-label">Web Search</span>
             </button>
+            <div style={{ flexGrow: 1 }} />
+            <div className="model-selector-wrapper">
+              <span className="model-selector-value">{currentModelName}</span>
+              <select
+                className="model-selector"
+                value={currentModelId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (currentProvider === 'openai') {
+                    setOpenaiModel(val);
+                  } else {
+                    setGeminiModel(val);
+                  }
+                }}
+                aria-label="Select AI Model"
+              >
+                {currentModels.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+              <svg className="model-selector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>

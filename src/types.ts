@@ -31,6 +31,7 @@ export interface SendMessageOptions {
   reasoningEffort?: ReasoningEffort;
   thinkingEnabled?: boolean;
   webSearchEnabled?: boolean;
+  model?: string;
 }
 
 export interface Source {

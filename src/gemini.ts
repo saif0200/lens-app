@@ -67,11 +67,30 @@ export async function sendMessageToGemini(
     ];
 
     // Determine model and tools
-    const model = thinkingEnabled ? "gemini-2.0-flash-thinking-exp-1219" : "gemini-2.0-flash-exp";
+    const model = options.model || "models/gemini-flash-latest";
     
     const tools: any[] = [];
     if (webSearchEnabled) {
       tools.push({ googleSearch: {} });
+    }
+
+    let thinkingConfig: any;
+
+    // Configure thinking based on model family
+    if (model.includes("gemini-3-pro")) {
+      // Gemini 3 Pro: Uses thinkingLevel, cannot be disabled
+      // Map reasoningEffort to thinkingLevel
+      thinkingConfig = {
+        thinkingLevel: options.reasoningEffort === 'low' ? "LOW" : "HIGH",
+        includeThoughts: false 
+      };
+    } else {
+      // Gemini 2.5 Flash / Flash-Lite: Uses thinkingBudget
+      // -1 triggers dynamic thinking, 0 disables it
+      thinkingConfig = {
+        thinkingBudget: thinkingEnabled ? -1 : 0,
+        includeThoughts: false
+      };
     }
 
     // Generate complete response
@@ -81,6 +100,7 @@ export async function sendMessageToGemini(
       config: {
         abortSignal,
         tools: tools.length > 0 ? tools : undefined,
+        thinkingConfig,
       },
     });
 

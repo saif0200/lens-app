@@ -34,7 +34,7 @@ export async function sendMessageToOpenAI(
   const fileUploadPromises = new Map<string, Promise<string>>();
 
   try {
-    const { reasoningEffort = 'low', webSearchEnabled = false } = options;
+    const { reasoningEffort = 'low', webSearchEnabled = false, model = "gpt-5.1-codex-mini" } = options;
     const history = conversationHistory.filter((msg) => msg.type !== 'typing');
     const inputMessages: ResponseInputMessage[] = buildConversationInputs(history);
 
@@ -50,7 +50,9 @@ export async function sendMessageToOpenAI(
           // Handle text-based attachments (code, txt, etc.)
           currentContent.push(
             createInputTextPart(
-              `\n\n--- Attachment: ${attachment.name || 'Untitled'} ---\n${attachment.text}\n-------------------\n`
+              `
+
+--- Attachment: ${attachment.name || 'Untitled'} ---\n${attachment.text}\n-------------------\n`
             )
           );
         } else {
@@ -91,7 +93,7 @@ export async function sendMessageToOpenAI(
 
     // @ts-ignore - responses API might not be in types yet
     const response = await client.responses.create({
-      model: "gpt-5.1-codex-mini",
+      model,
       input: inputMessages,
       max_output_tokens: 4096,
       reasoning: { effort: reasoningEffort },
