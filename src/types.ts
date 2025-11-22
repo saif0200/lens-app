@@ -5,7 +5,22 @@ export interface Message {
   type: 'user' | 'ai' | 'typing';
   screenshotIncluded?: boolean;
   screenshotData?: string;
+  screenshotMimeType?: string;
+  attachments?: {
+    preview: string;
+    mimeType: string;
+    name: string;
+  }[];
   sources?: Source[];
+}
+
+export interface AttachmentData {
+  base64: string;
+  mimeType: string;
+  name?: string;
+  text?: string;
+  id?: string;
+  file?: File;
 }
 
 export type AIProvider = 'gemini' | 'openai';

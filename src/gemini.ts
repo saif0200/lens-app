@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { Message, SendMessageOptions, Source } from "./types";
+import { Message, SendMessageOptions, Source, AttachmentData } from "./types";
 
 // Initialize the Gemini AI client
 const ai = new GoogleGenAI({
@@ -10,7 +10,7 @@ const ai = new GoogleGenAI({
  * Sends a message to Gemini and returns the complete response
  * @param message - The user's message
  * @param conversationHistory - Array of previous messages (last 4-8 messages recommended)
- * @param screenshotBase64 - Optional base64-encoded PNG screenshot to share with Gemini
+ * @param attachments - Optional array of attachments (image/pdf) to share with Gemini
  * @param abortSignal - Optional abort signal to cancel the request
  * @param options - Optional settings for the request (thinking, web search)
  * @returns Promise that resolves with the complete response text and sources
@@ -18,7 +18,7 @@ const ai = new GoogleGenAI({
 export async function sendMessageToGemini(
   message: string,
   conversationHistory: Message[],
-  screenshotBase64?: string,
+  attachments?: AttachmentData[],
   abortSignal?: AbortSignal,
   options: SendMessageOptions = {}
 ): Promise<{ text: string; sources?: Source[] }> {
@@ -34,13 +34,23 @@ export async function sendMessageToGemini(
       | { inlineData: { mimeType: string; data: string } }
     > = [{ text: message }];
 
-    if (screenshotBase64) {
-      userParts.push({
-        inlineData: {
-          mimeType: "image/png",
-          data: screenshotBase64,
-        },
-      });
+    if (attachments && attachments.length > 0) {
+      for (const attachment of attachments) {
+        if (attachment.text) {
+          // Send text files as text parts
+          userParts.push({
+            text: `\n\n--- Attachment: ${attachment.name || 'Untitled'} ---\n${attachment.text}\n-------------------\n`
+          });
+        } else {
+          // Send binary files (images, PDFs) as inlineData
+          userParts.push({
+            inlineData: {
+              mimeType: attachment.mimeType,
+              data: attachment.base64,
+            },
+          });
+        }
+      }
     }
 
     const contents = [

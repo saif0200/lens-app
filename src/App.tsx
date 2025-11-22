@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { sendMessage } from "./ai";
-import { Message, AIProvider, ReasoningEffort } from "./types";
+import { Message, AIProvider, ReasoningEffort, AttachmentData } from "./types";
 
 const cleanAiText = (text: string): string => {
   if (!text) {
@@ -73,12 +73,14 @@ function App() {
   const [isGeminiThinkingEnabled, setIsGeminiThinkingEnabled] = useState(false);
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
   const [isWindowVisible, setIsWindowVisible] = useState(true);
+  const [attachments, setAttachments] = useState<{ id: string; file: File; preview: string; base64: string; mimeType: string; text?: string }[]>([]);
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [copiedCodeBlockId, setCopiedCodeBlockId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
   const lastScrollKeyRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -323,7 +325,7 @@ function App() {
       setShowInput(true);
       setTimeout(() => {
         isAnimatingRef.current = false;
-      }, 380);
+      }, 320);
     }
   };
 
@@ -350,7 +352,7 @@ function App() {
       setShowInput(true);
       setTimeout(() => {
         isAnimatingRef.current = false;
-      }, 380);
+      }, 320);
     } else {
       inputRef.current?.focus();
       // Add a small lockout to prevent double-triggering
@@ -365,11 +367,12 @@ function App() {
     // First, trigger the exit animation by closing the input
     setShowInput(false);
 
-    // Then, after the exit animation completes (200ms), clear the chat state
+    // Then, after the exit animation completes, clear the chat state
     setTimeout(() => {
       setMessages([]);
       setHasExpanded(false);
       setInputValue("");
+      setAttachments([]);
       setIsScreenShareEnabled(false);
     }, 200);
   };
@@ -394,21 +397,39 @@ function App() {
   };
 
   const handleSendMessage = async () => {
-    if (inputValue.trim() === "" || isGenerating) return;
+    if ((inputValue.trim() === "" && attachments.length === 0) || isGenerating) return;
 
     const messageText = inputValue;
     setInputValue("");
+    const currentAttachments = [...attachments];
+    setAttachments([]);
     setIsGenerating(true);
 
-    let screenshotBase64: string | null = null;
+    let attachmentDataList: AttachmentData[] | undefined;
     let screenshotIncluded = false;
     let screenshotDataUrl: string | null = null;
+    let screenshotMimeType: string | undefined;
 
-    if (isScreenShareEnabled) {
-      screenshotBase64 = await captureScreenshot();
-      if (screenshotBase64) {
+    if (currentAttachments.length > 0) {
+      attachmentDataList = currentAttachments.map(att => ({
+        base64: att.base64,
+        mimeType: att.mimeType,
+        name: att.file.name,
+        text: att.text,
+        file: att.file,
+        id: att.id
+      }));
+    } else if (isScreenShareEnabled) {
+      const capturedBase64 = await captureScreenshot();
+      if (capturedBase64) {
+        attachmentDataList = [{
+          base64: capturedBase64,
+          mimeType: 'image/png',
+          name: 'Screen Capture.png'
+        }];
         screenshotIncluded = true;
-        screenshotDataUrl = `data:image/png;base64,${screenshotBase64}`;
+        screenshotDataUrl = `data:image/png;base64,${capturedBase64}`;
+        screenshotMimeType = 'image/png';
       } else {
         setIsScreenShareEnabled(false);
       }
@@ -421,6 +442,12 @@ function App() {
       type: 'user',
       screenshotIncluded,
       screenshotData: screenshotDataUrl ?? undefined,
+      screenshotMimeType,
+      attachments: currentAttachments.map(att => ({
+        preview: att.preview,
+        mimeType: att.mimeType,
+        name: att.file.name
+      }))
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -452,7 +479,7 @@ function App() {
       currentProvider,
       userMessage.text,
       history,
-      screenshotBase64 ?? undefined,
+      attachmentDataList,
       abortControllerRef.current.signal,
       {
         reasoningEffort,
@@ -478,7 +505,7 @@ function App() {
       })
       .catch((error) => {
         // Handle errors by showing error message
-        console.error('Gemini API error:', error);
+        console.error(`${currentProvider === 'openai' ? 'OpenAI' : 'Gemini'} API error:`, error);
 
         // Don't do anything if request was aborted - handleStopGeneration already handled it
         if (error.name === 'AbortError' || error.message?.includes('aborted')) {
@@ -528,6 +555,73 @@ function App() {
     if (e.key === "Enter") {
       e.preventDefault();
       void handleSendMessage();
+    }
+  };
+
+  const processFile = (file: File) => {
+    // Check if file is text-based (code, txt, md, etc.)
+    // This is a heuristic list, can be expanded
+    const isText = file.type.startsWith('text/') || 
+                   /\.(js|jsx|ts|tsx|json|md|css|html|xml|yml|yaml|py|rb|java|c|cpp|h|rs|go|php|txt|sh|bat|ps1)$/i.test(file.name);
+    
+    const isImage = file.type.startsWith('image/');
+
+    const reader = new FileReader();
+    
+    if (isText) {
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        // Create base64 for consistency (though we prefer 'text' for AI)
+        // Use a safe way to encode UTF-8 text to base64
+        const base64 = btoa(unescape(encodeURIComponent(text)));
+        
+        const newAttachment = {
+          id: Date.now().toString() + Math.random().toString(36).substring(2),
+          file,
+          preview: '', // No image preview for text
+          base64,
+          mimeType: file.type || 'text/plain',
+          text
+        };
+        
+        setAttachments(prev => [...prev, newAttachment]);
+        setIsScreenShareEnabled(false);
+      };
+      reader.readAsText(file);
+    } else {
+      // Binary files (Images, PDFs, etc.)
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        const base64 = result.split(',')[1];
+        const newAttachment = {
+          id: Date.now().toString() + Math.random().toString(36).substring(2),
+          file,
+          preview: isImage ? result : '', // Only images get a preview URL
+          base64,
+          mimeType: file.type || 'application/octet-stream'
+        };
+        
+        setAttachments(prev => [...prev, newAttachment]);
+        setIsScreenShareEnabled(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      Array.from(e.target.files).forEach(file => processFile(file));
+    }
+    // Reset input so same file can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+      Array.from(e.clipboardData.files).forEach(file => processFile(file));
+      e.preventDefault();
     }
   };
 
@@ -651,16 +745,17 @@ function App() {
 
       // Both providers now have a footer
       const extraHeight = 40;
+      const attachmentsHeight = attachments.length > 0 ? 80 : 0;
 
       if (!showInput) {
         // Pill mode - minimal height (even if chat exists)
         height = 60;
       } else if (hasExpanded) {
         // Chat history visible - full height
-        height = 305 + extraHeight;
+        height = 305 + extraHeight + attachmentsHeight;
       } else {
         // Just input visible - medium height
-        height = 105 + extraHeight;
+        height = 120 + extraHeight + attachmentsHeight;
       }
 
       // For entrance: resize immediately so window is ready before CSS animation
@@ -673,7 +768,7 @@ function App() {
     };
 
     void resizeWindow();
-  }, [showInput, hasExpanded, currentProvider]);
+  }, [showInput, hasExpanded, currentProvider, attachments.length]);
 
   useEffect(() => {
     // Listen for global shortcut event from Rust backend
@@ -927,6 +1022,32 @@ function App() {
                   {message.type === 'user' && (
                     <>
                       <div className="message-text">{message.text}</div>
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="message-attachments">
+                          {message.attachments.slice(0, 4).map((att, index) => (
+                            <div key={index} className="message-attachment-item">
+                              {att.mimeType.startsWith('image/') ? (
+                                <div className="message-attachment-thumb">
+                                  <img src={att.preview} alt={att.name} />
+                                </div>
+                              ) : (
+                                <div className="message-attachment-file">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                  <span className="file-name">{att.name}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {message.attachments.length > 4 && (
+                            <div className="message-attachment-more">
+                              +{message.attachments.length - 4}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {message.screenshotIncluded && (
                         <div className="message-screen-note">
                           <span className="message-screen-note-label">Sent your screen</span>
@@ -1059,6 +1180,34 @@ function App() {
               <div ref={messagesEndRef} className="scroll-spacer" />
             </div>
           )}
+          {attachments.length > 0 && (
+            <div className="attachments-area">
+              {attachments.map((att) => (
+                <div key={att.id} className="attachment-preview">
+                  {att.mimeType.startsWith('image/') ? (
+                    <img src={att.preview} alt="Attachment" />
+                  ) : (
+                    <div className="file-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="file-ext">{att.file.name.split('.').pop()}</span>
+                    </div>
+                  )}
+                  <button
+                    className="remove-attachment"
+                    onClick={() => setAttachments(prev => prev.filter(p => p.id !== att.id))}
+                    aria-label="Remove attachment"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="input-area">
             <input
               ref={inputRef}
@@ -1066,6 +1215,7 @@ function App() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={`Ask about your screen or conversation, or ${modKey} ↵ for Assist`}
               disabled={isGenerating}
             />
@@ -1099,7 +1249,7 @@ function App() {
                 onClick={() => {
                   void handleSendMessage();
                 }}
-                disabled={inputValue.trim() === ""}
+                disabled={inputValue.trim() === "" && attachments.length === 0}
               >
                 <svg
                   width="24"
@@ -1117,13 +1267,19 @@ function App() {
             )}
           </div>
           <div className="input-footer">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              multiple
+              style={{ display: 'none' }}
+            />
             <button
               className="attachment-button"
               aria-label="Add attachment"
               title="Add attachment"
               onClick={() => {
-                // Placeholder for attachment functionality
-                console.log("Attachment clicked");
+                fileInputRef.current?.click();
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

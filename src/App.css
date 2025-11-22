@@ -9,11 +9,11 @@
   /* snappy exit with quick deceleration */
   --anim-ease-exit: cubic-bezier(0.4, 0, 0.6, 1);
   /* smooth entrance ease with subtle elastic feel */
-  --anim-ease-entrance: cubic-bezier(0.34, 1.25, 0.64, 1);
+  --anim-ease-entrance: cubic-bezier(0.2, 0.8, 0.2, 1);
   /* shorter exit duration to make hide faster than show */
   --anim-exit-duration: 200ms;
   /* entrance duration - slightly longer for smoother feel */
-  --anim-entrance-duration: 380ms;
+  --anim-entrance-duration: 320ms;
   --bg-transparent: transparent;
   --toolbar-bg: rgba(0, 0, 0, 0.75);
   --toolbar-border: rgba(255, 255, 255, 0.15);
@@ -282,9 +282,9 @@ body {
   opacity: 0;
   overflow: hidden;
   /* Initial state: scaled down and slightly translated */
-  transform: scale(0.88) translateY(-8px);
+  transform: scale(0.96) translateY(-4px);
   transform-origin: top center;
-  filter: blur(16px);
+  filter: blur(8px);
   /* Exit animation: snappy and quick */
   transition:
     max-height var(--anim-exit-duration) var(--anim-ease-exit),
@@ -297,6 +297,19 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* Override for expanded state (exit/hidden) to reduce motion on large element */
+.app.chat-expanded .input-container {
+  transform: scale(0.99) translateY(-2px);
+  filter: blur(4px);
+  /* Snappier exit for larger content */
+  transition:
+    max-height 200ms var(--anim-ease-exit),
+    opacity 150ms var(--anim-ease-exit),
+    transform 200ms var(--anim-ease-exit),
+    filter 150ms var(--anim-ease-exit),
+    margin-top 200ms var(--anim-ease-exit);
 }
 
 .app.with-input .input-container {
@@ -313,6 +326,18 @@ body {
     margin-top var(--anim-entrance-duration) var(--anim-ease-entrance),
     filter calc(var(--anim-entrance-duration) * 0.65) var(--anim-ease-entrance) 60ms,
     opacity calc(var(--anim-entrance-duration) * 0.7) ease-out 40ms;
+}
+
+/* Override for expanded state (entrance/visible) */
+.app.with-input.chat-expanded .input-container {
+  max-height: 800px; /* Accommodate larger content */
+  /* Slower duration for the larger element to feel more natural */
+  transition:
+    max-height 420ms var(--anim-ease-entrance),
+    transform 420ms var(--anim-ease-entrance),
+    margin-top 420ms var(--anim-ease-entrance),
+    filter 300ms var(--anim-ease-entrance) 50ms,
+    opacity 300ms ease-out 50ms;
 }
 
 /* optional subtle entrance/exit keyframes for browsers that prefer animation over transition */
@@ -878,6 +903,39 @@ body {
   border-color: rgba(167, 139, 250, 0.2);
 }
 
+.web-search-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 28px;
+  padding: 0 8px;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--segment-radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+}
+
+.web-search-toggle:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.web-search-toggle.active,
+.web-search-toggle[aria-pressed="true"] {
+  color: #60a5fa; /* Blueish */
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.web-search-toggle:active {
+  transform: scale(0.95);
+}
+
 .reasoning-toggle:active {
   transform: scale(0.95);
 }
@@ -937,34 +995,73 @@ body {
   stroke: currentColor;
 }
 
-.web-search-toggle {
+.attachment-preview {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  padding: 0 8px;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--segment-radius);
-  color: var(--text-secondary);
+  height: 32px;
+  width: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.attachment-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-attachment {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 }
 
-.web-search-toggle:hover {
-  background: var(--segment-hover);
-  color: var(--text-primary);
+.attachment-preview:hover .remove-attachment {
+  opacity: 1;
 }
 
-.web-search-toggle.active {
-  color: #4ade80; /* Greenish */
-  background: rgba(74, 222, 128, 0.1);
-  border-color: rgba(74, 222, 128, 0.2);
+.file-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
 }
 
-.web-search-toggle:active {
-  transform: scale(0.95);
+.file-icon svg {
+  width: 16px;
+  height: 16px;
+  margin-bottom: 2px;
+}
+
+.file-ext {
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
 }
 
 .sources-container {
@@ -1011,6 +1108,96 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+}
+
+.attachments-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 0;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.attachments-area::-webkit-scrollbar {
+  display: none;
+}
+
+.attachments-area .attachment-preview {
+  margin-right: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+.attachments-area .file-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.attachments-area .file-ext {
+  font-size: 9px;
+}
+
+.message-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
+.message-attachment-item {
+  position: relative;
+}
+
+.message-attachment-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.message-attachment-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.message-attachment-file {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.message-attachment-file .file-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-attachment-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

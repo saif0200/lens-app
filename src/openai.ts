@@ -1,46 +1,82 @@
 import OpenAI from "openai";
-import { Message, SendMessageOptions, Source } from "./types";
+import type {
+  EasyInputMessage,
+  ResponseInputContent,
+  ResponseInputFile,
+  ResponseInputImage,
+  ResponseInputText,
+} from "openai/resources/responses/responses";
+import { Message, SendMessageOptions, Source, AttachmentData } from "./types";
 
 const client = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true // Since we are running in Tauri/Vite frontend
 });
 
+type InputTextPart = ResponseInputText;
+type InputImagePart = ResponseInputImage;
+type InputFilePart = ResponseInputFile;
+type InputContent = ResponseInputContent;
+type ResponseInputMessage = EasyInputMessage;
+
+const MAX_HISTORY_MESSAGES = 10;
+
 
 
 export async function sendMessageToOpenAI(
   message: string,
   conversationHistory: Message[],
-  screenshotBase64?: string,
+  attachments?: AttachmentData[],
   abortSignal?: AbortSignal,
   options: SendMessageOptions = {}
 ): Promise<{ text: string; sources?: Source[] }> {
+  const uploadedFileIds: string[] = [];
+  const fileUploadPromises = new Map<string, Promise<string>>();
+
   try {
     const { reasoningEffort = 'low', webSearchEnabled = false } = options;
     const history = conversationHistory.filter((msg) => msg.type !== 'typing');
-    const historySummary = summarizeHistory(history);
-
-    const inputMessages: any[] = [];
-    if (historySummary) {
-      inputMessages.push({
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: `Conversation recap: ${historySummary}`,
-          },
-        ],
-      });
-    }
+    const inputMessages: ResponseInputMessage[] = buildConversationInputs(history);
 
     // Add current message
-    const currentContent: any[] = [{ type: "input_text", text: message }];
-    if (screenshotBase64) {
-      currentContent.push({
-        type: "input_image",
-        image_url: `data:image/png;base64,${screenshotBase64}`,
-        detail: "auto"
-      });
+    const currentContent: InputContent[] = [createInputTextPart(message)];
+    
+    if (attachments && attachments.length > 0) {
+      for (const attachment of attachments) {
+        const mimeType = attachment.mimeType || 'application/octet-stream';
+        if (mimeType.startsWith('image/')) {
+          currentContent.push(createInputImagePart(attachment.base64, mimeType));
+        } else if (attachment.text && attachment.text.trim().length > 0) {
+          // Handle text-based attachments (code, txt, etc.)
+          currentContent.push(
+            createInputTextPart(
+              `\n\n--- Attachment: ${attachment.name || 'Untitled'} ---\n${attachment.text}\n-------------------\n`
+            )
+          );
+        } else {
+          const cacheKey = getAttachmentCacheKey(attachment);
+          try {
+            let fileIdPromise = fileUploadPromises.get(cacheKey);
+            if (!fileIdPromise) {
+              fileIdPromise = uploadAttachmentFile(attachment);
+              fileUploadPromises.set(cacheKey, fileIdPromise);
+            }
+            const fileId = await fileIdPromise;
+            uploadedFileIds.push(fileId);
+            currentContent.push({
+              type: "input_file",
+              file_id: fileId
+            });
+          } catch (uploadError) {
+            fileUploadPromises.delete(cacheKey);
+            console.warn("Falling back to inline file data for attachment:", uploadError);
+            const inlinePart = buildInlineFilePart(attachment);
+            if (inlinePart) {
+              currentContent.push(inlinePart);
+            }
+          }
+        }
+      }
     }
 
     inputMessages.push({
@@ -60,6 +96,7 @@ export async function sendMessageToOpenAI(
       max_output_tokens: 4096,
       reasoning: { effort: reasoningEffort },
       tools: tools.length > 0 ? tools : undefined,
+      store: false,
     }, { signal: abortSignal });
 
     return extractOpenAIResponse(response);
@@ -71,6 +108,18 @@ export async function sendMessageToOpenAI(
         ? error.message
         : "Failed to get response from OpenAI"
     );
+  } finally {
+    if (uploadedFileIds.length > 0) {
+      await Promise.allSettled(
+        uploadedFileIds.map(async (fileId) => {
+          try {
+            await client.files.delete(fileId);
+          } catch (cleanupError) {
+            console.warn("Failed to delete temporary file:", cleanupError);
+          }
+        })
+      );
+    }
   }
 }
 
@@ -149,25 +198,104 @@ function extractOpenAIResponse(response: any): { text: string; sources?: Source[
   return { text, sources: sources.length > 0 ? sources : undefined };
 }
 
-const HISTORY_SUMMARY_MAX_LENGTH = 600;
-
-function summarizeHistory(history: Message[]): string {
-  const recent = history.slice(-6);
-  const lines: string[] = [];
-
-  for (const msg of recent) {
-    const label = msg.type === "user" ? "User" : "AI";
-    const baseText = msg.text.replace(/\n+/g, " ").trim();
-    if (!baseText) continue;
-
-    const suffix = msg.screenshotIncluded ? " (shared screen)" : "";
-    lines.push(`${label}: ${baseText}${suffix}`);
-  }
-
-  let summary = lines.join(" | ");
-  if (summary.length > HISTORY_SUMMARY_MAX_LENGTH) {
-    summary = summary.slice(summary.length - HISTORY_SUMMARY_MAX_LENGTH);
-  }
-
-  return summary;
+function buildConversationInputs(history: Message[]): ResponseInputMessage[] {
+  const recent = history.slice(-MAX_HISTORY_MESSAGES);
+  return recent
+    .map((msg): ResponseInputMessage | undefined => {
+      const text = msg.text?.trim();
+      if (!text) {
+        return undefined;
+      }
+      const role: ResponseInputMessage["role"] = msg.type === 'user' ? 'user' : 'assistant';
+      const content: ResponseInputContent[] = [createInputTextPart(text)];
+      return {
+        role,
+        content,
+        type: 'message',
+      };
+    })
+    .filter((msg): msg is ResponseInputMessage => Boolean(msg));
 }
+
+function getAttachmentCacheKey(attachment: AttachmentData): string {
+  if (attachment.id) {
+    return attachment.id;
+  }
+  const prefix = attachment.name ?? 'file';
+  const hashSegment = attachment.base64 ? attachment.base64.slice(0, 32) : Math.random().toString(36).slice(2);
+  return `${prefix}:${attachment.mimeType}:${hashSegment}`;
+}
+
+async function uploadAttachmentFile(attachment: AttachmentData): Promise<string> {
+  const fileToUpload = attachment.file ?? createFileFromAttachment(attachment);
+
+  if (!fileToUpload) {
+    throw new Error("Cannot upload attachment because the File object is missing");
+  }
+
+  const uploaded = await client.files.create({
+    file: fileToUpload,
+    purpose: "user_data",
+    expires_after: {
+      anchor: "created_at",
+      seconds: 60 * 60
+    }
+  });
+
+  return uploaded.id;
+}
+
+function createFileFromAttachment(attachment: AttachmentData): File | undefined {
+  if (!attachment.base64) {
+    return undefined;
+  }
+
+  try {
+    const binaryString = atob(attachment.base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const mimeType = attachment.mimeType || 'application/octet-stream';
+    const blob = new Blob([bytes], { type: mimeType });
+    const filename = attachment.name || `attachment-${Date.now()}`;
+    return new File([blob], filename, { type: mimeType });
+  } catch (error) {
+    console.warn("Failed to recreate File from attachment base64:", error);
+    return undefined;
+  }
+}
+
+function buildInlineFilePart(attachment: AttachmentData): InputFilePart | undefined {
+  if (!attachment.base64) {
+    return undefined;
+  }
+
+  const mimeType = attachment.mimeType || 'application/octet-stream';
+  const dataPrefix = attachment.base64.startsWith('data:')
+    ? attachment.base64
+    : `data:${mimeType};base64,${attachment.base64}`;
+
+  return {
+    type: "input_file",
+    filename: attachment.name || 'attachment',
+    file_data: dataPrefix
+  };
+}
+
+function createInputTextPart(text: string): InputTextPart {
+  return {
+    type: "input_text",
+    text,
+  };
+}
+
+function createInputImagePart(base64: string, mimeType: string): InputImagePart {
+  return {
+    type: "input_image",
+    detail: "auto",
+    image_url: `data:${mimeType};base64,${base64}`,
+  };
+}
+
