@@ -55,10 +55,26 @@ export async function sendMessageToGemini(
 
     const contents = [
       // Add conversation history
-      ...recentHistory.map((msg) => ({
-        role: msg.type === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.text }],
-      })),
+      ...recentHistory.map((msg) => {
+        const parts: any[] = [{ text: msg.text }];
+        
+        if (msg.type === 'user' && msg.screenshotIncluded && msg.screenshotData) {
+          const match = msg.screenshotData.match(/^data:(.+);base64,(.+)$/);
+          if (match) {
+            parts.push({
+              inlineData: {
+                mimeType: match[1],
+                data: match[2]
+              }
+            });
+          }
+        }
+        
+        return {
+          role: msg.type === 'user' ? 'user' : 'model',
+          parts: parts,
+        };
+      }),
       // Add current message
       {
         role: "user" as const,
@@ -107,7 +123,8 @@ export async function sendMessageToGemini(
     // Extract sources from grounding metadata
     const sources: Source[] = [];
     const candidate = response.candidates?.[0];
-    const groundingChunks = candidate?.groundingMetadata?.groundingChunks;
+    const groundingMetadata = candidate?.groundingMetadata;
+    const groundingChunks = groundingMetadata?.groundingChunks;
     
     if (groundingChunks && Array.isArray(groundingChunks)) {
       for (const chunk of groundingChunks) {
@@ -120,9 +137,13 @@ export async function sendMessageToGemini(
       }
     }
 
-    // Fallback: Extract markdown links from text if no grounding metadata found
-    const text = response.text || "";
-    if (sources.length === 0) {
+    // Process text with inline citations if grounding supports are present
+    let text = response.text || "";
+    
+    if (groundingMetadata?.groundingSupports && groundingChunks) {
+      text = addCitationsToText(text, groundingMetadata);
+    } else if (sources.length === 0) {
+      // Fallback: Extract markdown links from text if no grounding metadata found
       const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
       let match;
       while ((match = linkRegex.exec(text)) !== null) {
@@ -146,4 +167,57 @@ export async function sendMessageToGemini(
         : "Failed to get response from Gemini"
     );
   }
+}
+
+/**
+ * Adds inline citations to the text based on grounding metadata
+ * Follows the pattern recommended in Gemini API documentation
+ */
+function addCitationsToText(text: string, groundingMetadata: any): string {
+  const supports = groundingMetadata.groundingSupports;
+  const chunks = groundingMetadata.groundingChunks;
+
+  if (!supports || !chunks || !Array.isArray(supports) || !Array.isArray(chunks)) {
+    return text;
+  }
+
+  // Sort supports by end index in descending order to avoid shifting issues
+  const sortedSupports = [...supports].sort((a, b) => {
+    const endA = a.segment?.endIndex ?? 0;
+    const endB = b.segment?.endIndex ?? 0;
+    return endB - endA;
+  });
+
+  let newText = text;
+
+  for (const support of sortedSupports) {
+    const endIndex = support.segment?.endIndex;
+    const chunkIndices = support.groundingChunkIndices;
+
+    if (typeof endIndex !== 'number' || !chunkIndices || !Array.isArray(chunkIndices)) {
+      continue;
+    }
+
+    // Create citation string like [1](url)
+    const citationLinks: string[] = [];
+    for (const index of chunkIndices) {
+      if (index >= 0 && index < chunks.length) {
+        const chunk = chunks[index];
+        const uri = chunk.web?.uri;
+        if (uri) {
+          citationLinks.push(`[${index + 1}](${uri})`);
+        }
+      }
+    }
+
+    if (citationLinks.length > 0) {
+      const citationString = " " + citationLinks.join(" ");
+      // Insert at the correct position
+      if (endIndex <= newText.length) {
+        newText = newText.slice(0, endIndex) + citationString + newText.slice(endIndex);
+      }
+    }
+  }
+
+  return newText;
 }

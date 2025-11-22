@@ -872,7 +872,7 @@ function App() {
 
         // Check if the last user message has an attachment
         const lastUserMessage = messages.filter(m => m.type === 'user').pop();
-        const hasAttachment = lastUserMessage?.screenshotIncluded ?? false;
+        const hasAttachment = lastUserMessage?.screenshotIncluded || (lastUserMessage?.attachments && lastUserMessage.attachments.length > 0) || false;
 
         // Reduce spacer height if there's an attachment (30% instead of 50%)
         const spacerMultiplier = hasAttachment ? 0.3 : 0.5;

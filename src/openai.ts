@@ -205,11 +205,26 @@ function buildConversationInputs(history: Message[]): ResponseInputMessage[] {
   return recent
     .map((msg): ResponseInputMessage | undefined => {
       const text = msg.text?.trim();
-      if (!text) {
+      // Allow empty text if there is an image
+      if (!text && !msg.screenshotIncluded) {
         return undefined;
       }
+      
       const role: ResponseInputMessage["role"] = msg.type === 'user' ? 'user' : 'assistant';
-      const content: ResponseInputContent[] = [createInputTextPart(text)];
+      const content: ResponseInputContent[] = [];
+      
+      if (text) {
+        content.push(createInputTextPart(text));
+      }
+      
+      if (msg.type === 'user' && msg.screenshotIncluded && msg.screenshotData) {
+         content.push({
+            type: "input_image",
+            detail: "auto",
+            image_url: msg.screenshotData
+         });
+      }
+
       return {
         role,
         content,
