@@ -964,15 +964,20 @@ function App() {
         </button>
 
         <button
-          className={`toolbar-segment toolbar-action screen-share-toggle ${isScreenShareEnabled ? "active" : ""}`}
+          className={`toolbar-segment toolbar-action screen-share-toggle ${isScreenShareEnabled ? "active" : ""} ${attachments.length > 0 ? "disabled" : ""}`}
           data-tauri-drag-region-disabled
           aria-label={`Screen share ${isScreenShareEnabled ? "on" : "off"}`}
           aria-pressed={isScreenShareEnabled}
+          disabled={attachments.length > 0}
           onClick={() => {
-            void handleScreenShareToggle();
+            if (attachments.length === 0) {
+              void handleScreenShareToggle();
+            }
           }}
           title={
-            isScreenShareEnabled
+            attachments.length > 0
+              ? "Screen sharing is disabled when attachments are present"
+              : isScreenShareEnabled
               ? "Stop sharing your current screen capture"
               : "Capture your screen for the next message"
           }

@@ -211,10 +211,14 @@ function buildConversationInputs(history: Message[]): ResponseInputMessage[] {
       }
       
       const role: ResponseInputMessage["role"] = msg.type === 'user' ? 'user' : 'assistant';
-      const content: ResponseInputContent[] = [];
+      const content: any[] = [];
       
       if (text) {
-        content.push(createInputTextPart(text));
+        if (role === 'assistant') {
+          content.push({ type: "output_text", text });
+        } else {
+          content.push(createInputTextPart(text));
+        }
       }
       
       if (msg.type === 'user' && msg.screenshotIncluded && msg.screenshotData) {

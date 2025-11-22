@@ -580,13 +580,13 @@ body {
   pointer-events: none;
   background: rgba(12, 12, 14, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 4px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   transition: opacity 120ms ease, transform 120ms ease;
   z-index: 20;
-  width: clamp(140px, 30vw, 200px);
-  max-height: clamp(100px, 28vh, 140px);
+  width: clamp(100px, 20vw, 140px);
+  max-height: clamp(70px, 20vh, 100px);
   overflow: hidden;
 }
 
