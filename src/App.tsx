@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { sendMessage } from "./ai";
-import { Message, AIProvider } from "./types";
+import { Message, AIProvider, ReasoningEffort } from "./types";
 
 const cleanAiText = (text: string): string => {
   if (!text) {
@@ -69,6 +69,9 @@ function App() {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentProvider, setCurrentProvider] = useState<AIProvider>('gemini');
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('low');
+  const [isGeminiThinkingEnabled, setIsGeminiThinkingEnabled] = useState(false);
+  const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -450,15 +453,21 @@ function App() {
       userMessage.text,
       history,
       screenshotBase64 ?? undefined,
-      abortControllerRef.current.signal
+      abortControllerRef.current.signal,
+      {
+        reasoningEffort,
+        thinkingEnabled: isGeminiThinkingEnabled,
+        webSearchEnabled: isWebSearchEnabled
+      }
     )
-      .then((responseText) => {
-        const cleanedResponse = cleanAiText(responseText);
+      .then((response) => {
+        const cleanedResponse = cleanAiText(response.text);
         const aiMessage: Message = {
           id: Date.now(),
           text: cleanedResponse,
           timestamp: new Date(),
           type: 'ai',
+          sources: response.sources
         };
         // Remove typing indicator and add AI response
         setMessages((prev) =>
@@ -640,15 +649,18 @@ function App() {
       const width = 545;
       let height: number;
 
+      // Both providers now have a footer
+      const extraHeight = 40;
+
       if (!showInput) {
         // Pill mode - minimal height (even if chat exists)
         height = 60;
       } else if (hasExpanded) {
         // Chat history visible - full height
-        height = 305;
+        height = 305 + extraHeight;
       } else {
         // Just input visible - medium height
-        height = 105;
+        height = 105 + extraHeight;
       }
 
       // For entrance: resize immediately so window is ready before CSS animation
@@ -661,7 +673,7 @@ function App() {
     };
 
     void resizeWindow();
-  }, [showInput, hasExpanded]);
+  }, [showInput, hasExpanded, currentProvider]);
 
   useEffect(() => {
     // Listen for global shortcut event from Rust backend
@@ -767,6 +779,14 @@ function App() {
     });
   }, [scrollTargetKey, messages]);
   const shouldShowResetButton = messages.length > 0 && showInput;
+
+  const cycleReasoningEffort = () => {
+    setReasoningEffort((prev) => {
+      if (prev === 'low') return 'medium';
+      if (prev === 'medium') return 'high';
+      return 'low';
+    });
+  };
 
   return (
     <div className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}>
@@ -947,6 +967,25 @@ function App() {
                           {message.text}
                         </ReactMarkdown>
                       </div>
+                      {message.sources && message.sources.length > 0 && (
+                        <div className="sources-container">
+                          {message.sources.map((source, index) => (
+                            <a
+                              key={index}
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="source-chip"
+                            >
+                              <span className="source-domain">
+                                {new URL(source.url).hostname.replace('www.', '')}
+                              </span>
+                              <span className="source-divider">-</span>
+                              <span className="source-title">{source.title}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       <div className="message-actions">
                         <button
                           type="button"
@@ -1076,6 +1115,78 @@ function App() {
                 </svg>
               </button>
             )}
+          </div>
+          <div className="input-footer">
+            <button
+              className="attachment-button"
+              aria-label="Add attachment"
+              title="Add attachment"
+              onClick={() => {
+                // Placeholder for attachment functionality
+                console.log("Attachment clicked");
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {currentProvider === 'openai' ? (
+              <button
+                className={`reasoning-toggle effort-${reasoningEffort}`}
+                onClick={cycleReasoningEffort}
+                title={`Reasoning Effort: ${reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1)}`}
+                aria-label="Toggle reasoning effort"
+              >
+                <span className="reasoning-icon">
+                  {reasoningEffort === 'low' && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                  {reasoningEffort === 'medium' && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                  {reasoningEffort === 'high' && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill="currentColor" opacity="0.2"/>
+                      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </span>
+                <span className="reasoning-label">
+                  {reasoningEffort.charAt(0).toUpperCase() + reasoningEffort.slice(1)}
+                </span>
+              </button>
+            ) : (
+              <button
+                className={`web-search-toggle ${isGeminiThinkingEnabled ? 'active' : ''}`}
+                onClick={() => setIsGeminiThinkingEnabled(!isGeminiThinkingEnabled)}
+                title={`Thinking: ${isGeminiThinkingEnabled ? 'On' : 'Off'}`}
+                aria-label="Toggle thinking"
+                aria-pressed={isGeminiThinkingEnabled}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill="currentColor" opacity="0.2"/>
+                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="reasoning-label">Thinking</span>
+              </button>
+            )}
+            <button
+              className={`web-search-toggle ${isWebSearchEnabled ? 'active' : ''}`}
+              onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
+              title={`Web Search: ${isWebSearchEnabled ? 'On' : 'Off'}`}
+              aria-label="Toggle web search"
+              aria-pressed={isWebSearchEnabled}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="reasoning-label">Web Search</span>
+            </button>
           </div>
         </div>
       </div>

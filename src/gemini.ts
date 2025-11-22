@@ -1,23 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { Message } from "./types";
-
-// System instructions for the AI assistant
-const SYSTEM_INSTRUCTIONS = `You're a real-time assistant that gives the user info during meetings and other workflows. Your goal is to answer the user's query directly.
-
-Responses must be EXTREMELY short and terse:
-- Aim for 1-2 sentences, and if longer, use bullet points for structure
-- Get straight to the point and NEVER add filler, preamble, or meta-comments
-- Never give the user a direct script or word track to say, your responses must be informative
-- Don't end with a question or prompt to the user
-- If an example story is needed, give one specific example story without making up details
-- If a response calls for code, write all code required with detailed comments
-
-Tone must be natural, human, and conversational:
-- Never be robotic or overly formal
-- Use contractions naturally ("it's" not "it is")
-- Occasionally start with "And" or "But" or use a sentence fragment for flow
-- NEVER use hyphens or dashes, split into shorter sentences or use commas
-- Avoid unnecessary adjectives or dramatic emphasis unless it adds clear value`;
+import { Message, SendMessageOptions, Source } from "./types";
 
 // Initialize the Gemini AI client
 const ai = new GoogleGenAI({
@@ -30,15 +12,19 @@ const ai = new GoogleGenAI({
  * @param conversationHistory - Array of previous messages (last 4-8 messages recommended)
  * @param screenshotBase64 - Optional base64-encoded PNG screenshot to share with Gemini
  * @param abortSignal - Optional abort signal to cancel the request
- * @returns Promise that resolves with the complete response text
+ * @param options - Optional settings for the request (thinking, web search)
+ * @returns Promise that resolves with the complete response text and sources
  */
 export async function sendMessageToGemini(
   message: string,
   conversationHistory: Message[],
   screenshotBase64?: string,
-  abortSignal?: AbortSignal
-): Promise<string> {
+  abortSignal?: AbortSignal,
+  options: SendMessageOptions = {}
+): Promise<{ text: string; sources?: Source[] }> {
   try {
+    const { thinkingEnabled = false, webSearchEnabled = false } = options;
+
     // Format conversation history for Gemini API
     // Take only the last 4-8 messages for context (as per user requirement)
     const recentHistory = conversationHistory.slice(-8);
@@ -70,18 +56,58 @@ export async function sendMessageToGemini(
       },
     ];
 
+    // Determine model and tools
+    const model = thinkingEnabled ? "gemini-2.0-flash-thinking-exp-1219" : "gemini-2.0-flash-exp";
+    
+    const tools: any[] = [];
+    if (webSearchEnabled) {
+      tools.push({ googleSearch: {} });
+    }
+
     // Generate complete response
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model,
       contents,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTIONS,
         abortSignal,
+        tools: tools.length > 0 ? tools : undefined,
       },
     });
 
-    // Return the complete response text
-    return response.text || "";
+    // Extract sources from grounding metadata
+    const sources: Source[] = [];
+    const candidate = response.candidates?.[0];
+    const groundingChunks = candidate?.groundingMetadata?.groundingChunks;
+    
+    if (groundingChunks && Array.isArray(groundingChunks)) {
+      for (const chunk of groundingChunks) {
+        if (chunk.web?.uri && chunk.web?.title) {
+          sources.push({
+            title: chunk.web.title,
+            url: chunk.web.uri
+          });
+        }
+      }
+    }
+
+    // Fallback: Extract markdown links from text if no grounding metadata found
+    const text = response.text || "";
+    if (sources.length === 0) {
+      const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+      let match;
+      while ((match = linkRegex.exec(text)) !== null) {
+        const [_, title, url] = match;
+        if (!sources.some(s => s.url === url)) {
+          sources.push({ title, url });
+        }
+      }
+    }
+
+    // Return the complete response text and sources
+    return {
+      text,
+      sources: sources.length > 0 ? sources : undefined
+    };
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     throw new Error(
