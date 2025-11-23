@@ -163,26 +163,33 @@ export async function sendMessageToGemini(
     
     if (groundingChunks && Array.isArray(groundingChunks)) {
       for (const chunk of groundingChunks) {
-        if (chunk.web?.uri && chunk.web?.title) {
-          sources.push({
-            title: chunk.web.title,
-            url: chunk.web.uri
-          });
+        const web = chunk.web;
+        if (web) {
+          // Prefer sourceUri if available, otherwise use uri
+          let url = (web as any).sourceUri || web.uri;
+          if (url) {
+            url = cleanUrl(url);
+          }
+          
+          if (url && web.title) {
+            sources.push({
+              title: web.title,
+              url: url
+            });
+          }
         }
       }
     }
 
-    // Process text with inline citations if grounding supports are present
-    if (groundingMetadata?.groundingSupports && groundingChunks) {
-      text = addCitationsToText(text, groundingMetadata);
-    } else if (sources.length === 0) {
-      // Fallback: Extract markdown links from text if no grounding metadata found
+    // Fallback: Extract markdown links from text if no grounding metadata found
+    if (sources.length === 0) {
       const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
       let match;
       while ((match = linkRegex.exec(text)) !== null) {
         const [_, title, url] = match;
-        if (!sources.some(s => s.url === url)) {
-          sources.push({ title, url });
+        const cleanedUrl = cleanUrl(url);
+        if (!sources.some(s => s.url === cleanedUrl)) {
+          sources.push({ title, url: cleanedUrl });
         }
       }
     }
@@ -204,55 +211,64 @@ export async function sendMessageToGemini(
   }
 }
 
-/**
- * Adds inline citations to the text based on grounding metadata
- * Follows the pattern recommended in Gemini API documentation
- */
-function addCitationsToText(text: string, groundingMetadata: any): string {
-  const supports = groundingMetadata.groundingSupports;
-  const chunks = groundingMetadata.groundingChunks;
-
-  if (!supports || !chunks || !Array.isArray(supports) || !Array.isArray(chunks)) {
-    return text;
-  }
-
-  // Sort supports by end index in descending order to avoid shifting issues
-  const sortedSupports = [...supports].sort((a, b) => {
-    const endA = a.segment?.endIndex ?? 0;
-    const endB = b.segment?.endIndex ?? 0;
-    return endB - endA;
-  });
-
-  let newText = text;
-
-  for (const support of sortedSupports) {
-    const endIndex = support.segment?.endIndex;
-    const chunkIndices = support.groundingChunkIndices;
-
-    if (typeof endIndex !== 'number' || !chunkIndices || !Array.isArray(chunkIndices)) {
-      continue;
-    }
-
-    // Create citation string like [1](url)
-    const citationLinks: string[] = [];
-    for (const index of chunkIndices) {
-      if (index >= 0 && index < chunks.length) {
-        const chunk = chunks[index];
-        const uri = chunk.web?.uri;
-        if (uri) {
-          citationLinks.push(`[${index + 1}](${uri})`);
+function cleanUrl(url: string): string {
+  if (!url) return url;
+  
+  // Check if it's a Google Vertex AI Search URL
+  if (url.includes('vertexaisearch.cloud.google.com')) {
+    // 1. Try to extract from query parameters
+    try {
+      const urlObj = new URL(url);
+      const params = new URLSearchParams(urlObj.search);
+      const candidates = ['url', 'original_url', 'q', 'source_url'];
+      for (const key of candidates) {
+        const val = params.get(key);
+        if (val && val.startsWith('http')) {
+          return val;
         }
       }
+    } catch (e) {
+      // ignore
     }
 
-    if (citationLinks.length > 0) {
-      const citationString = " " + citationLinks.join(" ");
-      // Insert at the correct position
-      if (endIndex <= newText.length) {
-        newText = newText.slice(0, endIndex) + citationString + newText.slice(endIndex);
+    // 2. Try to find a nested URL in the string (decoded or raw)
+    // We look for http:// or https:// that is NOT at the start
+    const match = url.match(/(https?:\/\/.+)/);
+    if (match && match[1]) {
+      const potentialUrl = match[1];
+      // If the match is exactly the same as the input url, it means we just matched the start.
+      // We want to find a *nested* url.
+      if (potentialUrl !== url) {
+         return potentialUrl;
+      }
+      
+      // If it is the same, let's try to find *another* http inside it
+      const secondHttpIndex = url.indexOf('http', 4);
+      if (secondHttpIndex !== -1) {
+        return url.substring(secondHttpIndex);
       }
     }
+    
+    // 3. Try decoding and looking again
+    try {
+        const decoded = decodeURIComponent(url);
+        if (decoded !== url) {
+            const matchDecoded = decoded.match(/(https?:\/\/.+)/);
+            if (matchDecoded && matchDecoded[1]) {
+                 const potentialUrl = matchDecoded[1];
+                 if (potentialUrl !== decoded) {
+                     return potentialUrl;
+                 }
+                 const secondHttpIndex = decoded.indexOf('http', 4);
+                 if (secondHttpIndex !== -1) {
+                    return decoded.substring(secondHttpIndex);
+                 }
+            }
+        }
+    } catch (e) {
+        // ignore
+    }
   }
-
-  return newText;
+  return url;
 }
+

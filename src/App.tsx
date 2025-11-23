@@ -1357,10 +1357,23 @@ function App() {
                               rel="noopener noreferrer"
                               className="source-chip"
                             >
-                              <span className="source-domain">
-                                {new URL(source.url).hostname.replace('www.', '')}
-                              </span>
-                              <span className="source-divider">-</span>
+                              {(() => {
+                                try {
+                                  const hostname = new URL(source.url).hostname.replace('www.', '');
+                                  // Don't show vertexaisearch domain, it's an internal proxy
+                                  if (hostname.includes('vertexaisearch') || hostname.includes('googleusercontent')) {
+                                    return null;
+                                  }
+                                  return (
+                                    <>
+                                      <span className="source-domain">{hostname}</span>
+                                      <span className="source-divider">-</span>
+                                    </>
+                                  );
+                                } catch (e) {
+                                  return null;
+                                }
+                              })()}
                               <span className="source-title">{source.title}</span>
                             </a>
                           ))}
