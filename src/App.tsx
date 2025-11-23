@@ -72,8 +72,8 @@ const OPENAI_MODELS = [
 ];
 
 const GEMINI_MODELS = [
-  { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash' },
-  { id: 'gemini-flash-lite-latest', name: 'Gemini 2.5 Flash-Lite' },
+  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash' },
+  { id: 'gemini-2.0-flash-lite-preview-02-05', name: 'Gemini 2.0 Flash-Lite' },
   { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro Preview' },
 ];
 
@@ -93,6 +93,7 @@ function App() {
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [expandedThoughts, setExpandedThoughts] = useState<Set<number>>(new Set());
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [copiedCodeBlockId, setCopiedCodeBlockId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -132,6 +133,18 @@ function App() {
     } catch (error) {
       console.error("Failed to copy code block:", error);
     }
+  };
+
+  const toggleThought = (messageId: number) => {
+    setExpandedThoughts(prev => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
   };
 
   const MarkdownCode = ({
@@ -513,7 +526,9 @@ function App() {
           text: cleanedResponse,
           timestamp: new Date(),
           type: 'ai',
-          sources: response.sources
+          sources: response.sources,
+          thought: response.thought,
+          thoughtDuration: response.thoughtDuration
         };
         // Remove typing indicator and add AI response
         setMessages((prev) =>
@@ -1146,6 +1161,38 @@ function App() {
                   )}
                   {message.type === 'ai' && (
                     <div className="ai-text">
+                      {message.thought && (
+                        <div className="thought-container">
+                          <button 
+                            className="thought-toggle"
+                            onClick={() => toggleThought(message.id)}
+                          >
+                            <span className="thought-label">
+                              Thought for {message.thoughtDuration || 0} seconds
+                            </span>
+                            <svg 
+                              className={`thought-chevron ${expandedThoughts.has(message.id) ? 'expanded' : ''}`}
+                              width="12" 
+                              height="12" 
+                              viewBox="0 0 24 24" 
+                              fill="none" 
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                          <div className={`thought-content-wrapper ${expandedThoughts.has(message.id) ? 'expanded' : ''}`}>
+                            <div className="thought-content">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={markdownComponents}
+                              >
+                                {message.thought}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div className="ai-markdown">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}

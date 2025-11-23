@@ -9,7 +9,7 @@ export async function sendMessage(
   attachments?: AttachmentData[],
   abortSignal?: AbortSignal,
   options: SendMessageOptions = {}
-): Promise<{ text: string; sources?: Source[] }> {
+): Promise<{ text: string; sources?: Source[]; thought?: string; thoughtDuration?: number }> {
   if (provider === 'openai') {
     return sendMessageToOpenAI(message, conversationHistory, attachments, abortSignal, options);
   } else {

@@ -12,6 +12,8 @@ export interface Message {
     name: string;
   }[];
   sources?: Source[];
+  thought?: string;
+  thoughtDuration?: number;
 }
 
 export interface AttachmentData {

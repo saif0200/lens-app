@@ -21,7 +21,7 @@ export async function sendMessageToGemini(
   attachments?: AttachmentData[],
   abortSignal?: AbortSignal,
   options: SendMessageOptions = {}
-): Promise<{ text: string; sources?: Source[] }> {
+): Promise<{ text: string; sources?: Source[]; thought?: string; thoughtDuration?: number }> {
   try {
     const { thinkingEnabled = false, webSearchEnabled = false } = options;
 
@@ -98,16 +98,21 @@ export async function sendMessageToGemini(
       // Map reasoningEffort to thinkingLevel
       thinkingConfig = {
         thinkingLevel: options.reasoningEffort === 'low' ? "LOW" : "HIGH",
-        includeThoughts: false 
+        includeThoughts: true 
+      };
+    } else if (thinkingEnabled) {
+      // Gemini 2.0 Flash / Flash-Lite: Uses thinkingBudget
+      // Use a fixed budget of 2048 tokens when enabled to ensure it triggers
+      thinkingConfig = {
+        thinkingBudget: 2048,
+        includeThoughts: true
       };
     } else {
-      // Gemini 2.5 Flash / Flash-Lite: Uses thinkingBudget
-      // -1 triggers dynamic thinking, 0 disables it
-      thinkingConfig = {
-        thinkingBudget: thinkingEnabled ? -1 : 0,
-        includeThoughts: false
-      };
+      // If thinking is disabled, we don't send thinkingConfig
+      thinkingConfig = undefined;
     }
+
+    const startTime = Date.now();
 
     // Generate complete response
     const response = await ai.models.generateContent({
@@ -120,9 +125,33 @@ export async function sendMessageToGemini(
       },
     });
 
+    const endTime = Date.now();
+    const thoughtDuration = Math.ceil((endTime - startTime) / 1000);
+
     // Extract sources from grounding metadata
     const sources: Source[] = [];
     const candidate = response.candidates?.[0];
+    
+    // Extract thought and text
+    let thought = "";
+    let text = "";
+    
+    if (candidate?.content?.parts) {
+      for (const part of candidate.content.parts) {
+        // Check for thought property (it's a boolean in the API response for thought parts)
+        if ((part as any).thought) {
+          thought += part.text || "";
+        } else {
+          text += part.text || "";
+        }
+      }
+    }
+
+    // If no parts were processed or text is empty, fallback to response.text
+    if (!text && response.text) {
+      text = response.text;
+    }
+
     const groundingMetadata = candidate?.groundingMetadata;
     const groundingChunks = groundingMetadata?.groundingChunks;
     
@@ -138,8 +167,6 @@ export async function sendMessageToGemini(
     }
 
     // Process text with inline citations if grounding supports are present
-    let text = response.text || "";
-    
     if (groundingMetadata?.groundingSupports && groundingChunks) {
       text = addCitationsToText(text, groundingMetadata);
     } else if (sources.length === 0) {
@@ -157,7 +184,9 @@ export async function sendMessageToGemini(
     // Return the complete response text and sources
     return {
       text,
-      sources: sources.length > 0 ? sources : undefined
+      sources: sources.length > 0 ? sources : undefined,
+      thought: thought.length > 0 ? thought : undefined,
+      thoughtDuration: thought.length > 0 ? thoughtDuration : undefined
     };
   } catch (error) {
     console.error("Error calling Gemini API:", error);
