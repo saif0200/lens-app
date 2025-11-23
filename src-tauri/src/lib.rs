@@ -32,8 +32,16 @@ fn toggle_window(app: AppHandle) {
 fn resize_window(app: AppHandle, width: f64, height: f64) {
     if let Some(window) = app.get_webview_window("main") {
         use tauri::LogicalSize;
+        // Store current position to anchor the window
+        let current_pos = window.outer_position().ok();
+
         let size = LogicalSize::new(width, height);
         let _ = window.set_size(size);
+
+        // Restore position to ensure top-left anchor
+        if let Some(pos) = current_pos {
+            let _ = window.set_position(pos);
+        }
     }
 }
 
