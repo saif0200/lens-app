@@ -106,6 +106,8 @@ function App() {
   const codeBlockCopyResetTimerRef = useRef<number | null>(null);
   const lastFocusTimeRef = useRef(0);
   const prevShowInputRef = useRef(showInput);
+  const resizeTimeoutRef = useRef<number | null>(null);
+  const lastWindowSizeRef = useRef<{ width: number; height: number } | null>(null);
   const isMac =
     typeof navigator !== "undefined"
       ? navigator.platform.toUpperCase().includes("MAC")
@@ -792,8 +794,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     // Dynamically resize window based on state
-    const resizeWindow = async () => {
+    const resizeWindow = () => {
       const baseWidth = 545;
       let baseHeight: number;
 
@@ -818,15 +824,49 @@ function App() {
       // Only delay if we are closing the input (transitioning from true to false)
       const isClosing = prevShowInputRef.current && !showInput;
       const delay = isClosing ? 200 : 0;
-      
+
       prevShowInputRef.current = showInput;
 
-      setTimeout(async () => {
-        await invoke("resize_window", { width, height });
-      }, delay);
+      if (resizeTimeoutRef.current) {
+        window.clearTimeout(resizeTimeoutRef.current);
+        resizeTimeoutRef.current = null;
+      }
+
+      const performResize = () => {
+        const lastSize = lastWindowSizeRef.current;
+        if (
+          lastSize &&
+          Math.abs(lastSize.width - width) < 0.5 &&
+          Math.abs(lastSize.height - height) < 0.5
+        ) {
+          return;
+        }
+
+        lastWindowSizeRef.current = { width, height };
+
+        void invoke("resize_window", { width, height }).catch((error) => {
+          console.error("Window resize failed:", error);
+        });
+      };
+
+      if (delay > 0) {
+        resizeTimeoutRef.current = window.setTimeout(() => {
+          performResize();
+          resizeTimeoutRef.current = null;
+        }, delay);
+      } else {
+        performResize();
+      }
     };
 
-    void resizeWindow();
+    resizeWindow();
+
+    return () => {
+      if (resizeTimeoutRef.current) {
+        window.clearTimeout(resizeTimeoutRef.current);
+        resizeTimeoutRef.current = null;
+      }
+    };
   }, [showInput, hasExpanded, currentProvider, attachments.length, zoomLevel]);
 
   useEffect(() => {
