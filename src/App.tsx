@@ -72,8 +72,8 @@ const OPENAI_MODELS = [
 ];
 
 const GEMINI_MODELS = [
-  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash' },
-  { id: 'gemini-2.0-flash-lite-preview-02-05', name: 'Gemini 2.0 Flash-Lite' },
+  { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash' },
+  { id: 'gemini-flash-lite-latest', name: 'Gemini 2.5 Flash-Lite' },
   { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro Preview' },
 ];
 

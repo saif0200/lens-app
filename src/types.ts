@@ -34,6 +34,7 @@ export interface SendMessageOptions {
   thinkingEnabled?: boolean;
   webSearchEnabled?: boolean;
   model?: string;
+  verbosity?: 'low' | 'medium' | 'high';
 }
 
 export interface Source {

@@ -83,7 +83,7 @@ export async function sendMessageToGemini(
     ];
 
     // Determine model and tools
-    const model = options.model || "models/gemini-flash-latest";
+    const model = options.model || "models/gemini-2.5-flash";
     
     const tools: any[] = [];
     if (webSearchEnabled) {

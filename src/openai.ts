@@ -21,6 +21,10 @@ type ResponseInputMessage = EasyInputMessage;
 
 const MAX_HISTORY_MESSAGES = 10;
 
+// Editable default verbosity for Responses text outputs.
+// Change this constant to adjust the verbosity without touching the UI.
+const DEFAULT_OPENAI_VERBOSITY: 'low' | 'medium' | 'high' = 'medium';
+
 
 
 export async function sendMessageToOpenAI(
@@ -34,7 +38,12 @@ export async function sendMessageToOpenAI(
   const fileUploadPromises = new Map<string, Promise<string>>();
 
   try {
-    const { reasoningEffort = 'low', webSearchEnabled = false, model = "gpt-5.1-codex-mini" } = options;
+    const {
+      reasoningEffort = 'low',
+      webSearchEnabled = false,
+      model = "gpt-5.1-codex-mini",
+      verbosity = DEFAULT_OPENAI_VERBOSITY,
+    } = options;
     const history = conversationHistory.filter((msg) => msg.type !== 'typing');
     const inputMessages: ResponseInputMessage[] = buildConversationInputs(history);
 
@@ -92,16 +101,30 @@ export async function sendMessageToOpenAI(
     }
 
     // @ts-ignore - responses API might not be in types yet
+    const textConfig = verbosity ? { verbosity } : undefined;
+
     const response = await client.responses.create({
       model,
       input: inputMessages,
       max_output_tokens: 4096,
       reasoning: { effort: reasoningEffort },
+      text: textConfig,
       tools: tools.length > 0 ? tools : undefined,
-      store: false,
+      store: true,
     }, { signal: abortSignal });
 
-    return extractOpenAIResponse(response);
+    const parsedResponse = extractOpenAIResponse(response);
+
+    console.info("[OpenAI] Response received", {
+      model,
+      reasoningEffort,
+      webSearchEnabled,
+      textPreview: parsedResponse.text.slice(0, 120),
+      totalSources: parsedResponse.sources?.length ?? 0,
+      hasOutput: parsedResponse.text.length > 0
+    });
+
+    return parsedResponse;
 
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
