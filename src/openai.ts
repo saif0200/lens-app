@@ -227,6 +227,22 @@ function extractOpenAIResponse(response: any): { text: string; sources?: Source[
     }
   }
 
+  // CLEANUP: Remove markdown links from text to avoid duplication/clutter
+  // 1. Remove numeric citations [1](url) -> empty
+  text = text.replace(/\[\d+\]\(https?:\/\/[^\)]+\)/g, "");
+  
+  // 2. Replace named links [Title](url) -> Title
+  text = text.replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, "$1");
+
+  // 3. Remove standalone numeric citations like [1], [2]
+  text = text.replace(/\[\d+\]/g, "");
+
+  // 4. Remove OpenAI style source markers like 【11†source】
+  text = text.replace(/【\d+†source】/g, "");
+  
+  // 5. Clean up any double spaces or trailing spaces left behind
+  text = text.replace(/  +/g, " ").trim();
+
   return { text, sources: sources.length > 0 ? sources : undefined };
 }
 

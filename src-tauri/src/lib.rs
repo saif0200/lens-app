@@ -46,6 +46,16 @@ fn resize_window(app: AppHandle, width: f64, height: f64) {
 }
 
 #[tauri::command]
+fn set_content_protection(app: AppHandle, enabled: bool) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_content_protected(enabled);
+    }
+    if let Some(window) = app.get_webview_window("settings") {
+        let _ = window.set_content_protected(enabled);
+    }
+}
+
+#[tauri::command]
 fn capture_screen() -> Result<String, String> {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -136,7 +146,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, toggle_window, resize_window, capture_screen])
+        .invoke_handler(tauri::generate_handler![greet, toggle_window, resize_window, capture_screen, set_content_protection])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -811,6 +811,15 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Apply content protection setting on startup
+    const storedContentProtection = localStorage.getItem("content_protection");
+    if (storedContentProtection) {
+      const enabled = storedContentProtection === "true";
+      invoke("set_content_protection", { enabled });
+    }
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
@@ -1359,22 +1368,63 @@ function App() {
                             >
                               {(() => {
                                 try {
-                                  const hostname = new URL(source.url).hostname.replace('www.', '');
+                                  const urlObj = new URL(source.url);
+                                  const hostname = urlObj.hostname.replace('www.', '');
+                                  
                                   // Don't show vertexaisearch domain, it's an internal proxy
                                   if (hostname.includes('vertexaisearch') || hostname.includes('googleusercontent')) {
                                     return null;
                                   }
+
+                                  let displayTitle = source.title;
+                                  let isTitleUrl = false;
+                                  try {
+                                      // Check if title is a URL
+                                      if (displayTitle.startsWith('http://') || displayTitle.startsWith('https://')) {
+                                          isTitleUrl = true;
+                                      }
+                                  } catch {}
+
+                                  if (isTitleUrl) {
+                                      // If title is a URL, try to extract something meaningful or hide it
+                                      try {
+                                          const titleUrlObj = new URL(displayTitle);
+                                          const path = titleUrlObj.pathname;
+                                          if (path && path !== '/' && path.length > 1) {
+                                              // Use the last segment of the path as title
+                                              const segments = path.split('/').filter(Boolean);
+                                              if (segments.length > 0) {
+                                                  displayTitle = segments[segments.length - 1];
+                                                  // Decode it to make it readable
+                                                  displayTitle = decodeURIComponent(displayTitle).replace(/[-_]/g, ' ');
+                                              } else {
+                                                  displayTitle = '';
+                                              }
+                                          } else {
+                                              // Just domain, so hide title part
+                                              displayTitle = '';
+                                          }
+                                      } catch {
+                                          // If parsing fails, just hide it
+                                          displayTitle = '';
+                                      }
+                                  }
+
                                   return (
                                     <>
                                       <span className="source-domain">{hostname}</span>
-                                      <span className="source-divider">-</span>
+                                      {displayTitle && displayTitle !== hostname && (
+                                          <>
+                                            <span className="source-divider">-</span>
+                                            <span className="source-title">{displayTitle}</span>
+                                          </>
+                                      )}
                                     </>
                                   );
                                 } catch (e) {
                                   return null;
                                 }
                               })()}
-                              <span className="source-title">{source.title}</span>
                             </a>
                           ))}
                         </div>
@@ -1650,3 +1700,4 @@ function App() {
 }
 
 export default App;
+                         

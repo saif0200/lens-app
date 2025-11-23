@@ -1,16 +1,25 @@
 import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 function Settings() {
   const [openaiKey, setOpenaiKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
+  const [contentProtection, setContentProtection] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const storedOpenaiKey = localStorage.getItem("openai_api_key");
     const storedGeminiKey = localStorage.getItem("gemini_api_key");
+    const storedContentProtection = localStorage.getItem("content_protection");
+    
     if (storedOpenaiKey) setOpenaiKey(storedOpenaiKey);
     if (storedGeminiKey) setGeminiKey(storedGeminiKey);
+    if (storedContentProtection) {
+      const enabled = storedContentProtection === "true";
+      setContentProtection(enabled);
+      invoke("set_content_protection", { enabled });
+    }
   }, []);
 
   const handleSave = () => {
@@ -25,6 +34,9 @@ function Settings() {
     } else {
       localStorage.removeItem("gemini_api_key");
     }
+
+    localStorage.setItem("content_protection", String(contentProtection));
+    invoke("set_content_protection", { enabled: contentProtection });
     
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -85,6 +97,21 @@ function Settings() {
             Clear
           </button>
         </div>
+      </div>
+
+      <div className="settings-section">
+        <label className="settings-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+          <span>Invisible to Screen Capture</span>
+          <input
+            type="checkbox"
+            checked={contentProtection}
+            onChange={(e) => setContentProtection(e.target.checked)}
+            style={{ width: 'auto', margin: 0 }}
+          />
+        </label>
+        <p style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+          When enabled, the app window will be invisible in screenshots and screen sharing.
+        </p>
       </div>
 
       <div className="settings-actions">

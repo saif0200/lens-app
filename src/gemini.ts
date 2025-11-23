@@ -194,6 +194,14 @@ export async function sendMessageToGemini(
       }
     }
 
+    // CLEANUP: Remove citations from text to avoid duplication/clutter
+    // 1. Remove numeric citations [1](url) -> empty
+    text = text.replace(/\[\d+\]\(https?:\/\/[^\)]+\)/g, "");
+    // 2. Remove standalone numeric citations like [1], [2]
+    text = text.replace(/\[\d+\]/g, "");
+    // 3. Clean up any double spaces
+    text = text.replace(/  +/g, " ").trim();
+
     // Return the complete response text and sources
     return {
       text,
