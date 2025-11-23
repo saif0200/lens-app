@@ -91,6 +91,7 @@ function App() {
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [attachments, setAttachments] = useState<{ id: string; file: File; preview: string; base64: string; mimeType: string; text?: string }[]>([]);
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [copiedCodeBlockId, setCopiedCodeBlockId] = useState<string | null>(null);
@@ -103,6 +104,7 @@ function App() {
   const copyResetTimerRef = useRef<number | null>(null);
   const codeBlockCopyResetTimerRef = useRef<number | null>(null);
   const lastFocusTimeRef = useRef(0);
+  const prevShowInputRef = useRef(showInput);
   const isMac =
     typeof navigator !== "undefined"
       ? navigator.platform.toUpperCase().includes("MAC")
@@ -643,6 +645,26 @@ function App() {
   };
 
   useEffect(() => {
+    const handleZoom = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "=" || e.key === "+")) {
+        e.preventDefault();
+        setZoomLevel((prev) => Math.min(prev + 0.1, 3));
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "-") {
+        e.preventDefault();
+        setZoomLevel((prev) => Math.max(prev - 0.1, 0.5));
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "0") {
+        e.preventDefault();
+        setZoomLevel(1);
+      }
+    };
+
+    window.addEventListener("keydown", handleZoom);
+    return () => window.removeEventListener("keydown", handleZoom);
+  }, []);
+
+  useEffect(() => {
     const handleFocus = () => {
       lastFocusTimeRef.current = Date.now();
     };
@@ -757,8 +779,8 @@ function App() {
   useEffect(() => {
     // Dynamically resize window based on state
     const resizeWindow = async () => {
-      const width = 545;
-      let height: number;
+      const baseWidth = 545;
+      let baseHeight: number;
 
       // Both providers now have a footer
       const extraHeight = 40;
@@ -766,18 +788,23 @@ function App() {
 
       if (!showInput) {
         // Pill mode - minimal height (even if chat exists)
-        height = 60;
+        baseHeight = 60;
       } else if (hasExpanded) {
         // Chat history visible - full height
-        height = 305 + extraHeight + attachmentsHeight;
+        baseHeight = 305 + extraHeight + attachmentsHeight;
       } else {
         // Just input visible - medium height
-        height = 120 + extraHeight + attachmentsHeight;
+        baseHeight = 120 + extraHeight + attachmentsHeight;
       }
 
-      // For entrance: resize immediately so window is ready before CSS animation
-      // For exit: delay resize until after CSS exit animation completes
-      const delay = showInput ? 0 : 200;
+      const width = baseWidth * zoomLevel;
+      const height = baseHeight * zoomLevel;
+
+      // Only delay if we are closing the input (transitioning from true to false)
+      const isClosing = prevShowInputRef.current && !showInput;
+      const delay = isClosing ? 200 : 0;
+      
+      prevShowInputRef.current = showInput;
 
       setTimeout(async () => {
         await invoke("resize_window", { width, height });
@@ -785,7 +812,7 @@ function App() {
     };
 
     void resizeWindow();
-  }, [showInput, hasExpanded, currentProvider, attachments.length]);
+  }, [showInput, hasExpanded, currentProvider, attachments.length, zoomLevel]);
 
   useEffect(() => {
     // Listen for global shortcut event from Rust backend
@@ -915,7 +942,10 @@ function App() {
   }, [currentProvider, geminiModel, reasoningEffort]);
 
   return (
-    <div className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}>
+    <div 
+      className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}
+      style={{ zoom: zoomLevel } as React.CSSProperties}
+    >
       <div className="toolbar">
         <button
           className="toolbar-segment drag-handle"
