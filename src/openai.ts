@@ -8,10 +8,16 @@ import type {
 } from "openai/resources/responses/responses";
 import { Message, SendMessageOptions, Source, AttachmentData } from "./types";
 
-const client = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Since we are running in Tauri/Vite frontend
-});
+function getOpenAIClient() {
+  const apiKey = localStorage.getItem("openai_api_key");
+  if (!apiKey) {
+    throw new Error("OpenAI API key not found. Please set it in settings.");
+  }
+  return new OpenAI({
+    apiKey,
+    dangerouslyAllowBrowser: true
+  });
+}
 
 type InputTextPart = ResponseInputText;
 type InputImagePart = ResponseInputImage;
@@ -34,6 +40,7 @@ export async function sendMessageToOpenAI(
   abortSignal?: AbortSignal,
   options: SendMessageOptions = {}
 ): Promise<{ text: string; sources?: Source[] }> {
+  const client = getOpenAIClient();
   const uploadedFileIds: string[] = [];
   const fileUploadPromises = new Map<string, Promise<string>>();
 
@@ -69,7 +76,7 @@ export async function sendMessageToOpenAI(
           try {
             let fileIdPromise = fileUploadPromises.get(cacheKey);
             if (!fileIdPromise) {
-              fileIdPromise = uploadAttachmentFile(attachment);
+              fileIdPromise = uploadAttachmentFile(client, attachment);
               fileUploadPromises.set(cacheKey, fileIdPromise);
             }
             const fileId = await fileIdPromise;
@@ -270,7 +277,7 @@ function getAttachmentCacheKey(attachment: AttachmentData): string {
   return `${prefix}:${attachment.mimeType}:${hashSegment}`;
 }
 
-async function uploadAttachmentFile(attachment: AttachmentData): Promise<string> {
+async function uploadAttachmentFile(client: OpenAI, attachment: AttachmentData): Promise<string> {
   const fileToUpload = attachment.file ?? createFileFromAttachment(attachment);
 
   if (!fileToUpload) {

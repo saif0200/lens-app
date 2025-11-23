@@ -10,6 +10,9 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { sendMessage } from "./ai";
 import { Message, AIProvider, ReasoningEffort, AttachmentData } from "./types";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
+import { PhysicalPosition } from "@tauri-apps/api/dpi";
 
 const cleanAiText = (text: string): string => {
   if (!text) {
@@ -320,6 +323,90 @@ function App() {
     }, 300);
   };
 
+  const handleOpenSettings = async (options?: { avoidMainWindow?: boolean }) => {
+    const avoidMainWindow = options?.avoidMainWindow ?? false;
+    try {
+      const settingsWidth = 400;
+      const settingsHeight = 500;
+      let settingsWindow = await WebviewWindow.getByLabel('settings');
+
+      if (!avoidMainWindow) {
+        if (settingsWindow) {
+          await settingsWindow.show();
+          await settingsWindow.setFocus();
+          return;
+        }
+
+        settingsWindow = new WebviewWindow('settings', {
+          url: 'settings.html',
+          title: 'Settings',
+          width: settingsWidth,
+          height: settingsHeight,
+          resizable: false,
+          transparent: true,
+          hiddenTitle: true,
+          titleBarStyle: 'overlay',
+          alwaysOnTop: true,
+        });
+      } else {
+        const currentWindow = getCurrentWindow();
+        const [position, size, monitor] = await Promise.all([
+          currentWindow.outerPosition(),
+          currentWindow.outerSize(),
+          currentMonitor(),
+        ]);
+        const gap = 16;
+        const displayLeft = monitor?.position.x ?? 0;
+        const displayTop = monitor?.position.y ?? 0;
+        const displayRight = monitor ? monitor.position.x + monitor.size.width : Number.POSITIVE_INFINITY;
+        const displayBottom = monitor ? monitor.position.y + monitor.size.height : Number.POSITIVE_INFINITY;
+
+        let targetX = position.x + size.width + gap;
+        if (targetX + settingsWidth > displayRight) {
+          targetX = Math.max(position.x - settingsWidth - gap, displayLeft);
+        }
+
+        let targetY = position.y;
+        if (targetY + settingsHeight > displayBottom) {
+          targetY = Math.max(displayTop, displayBottom - settingsHeight);
+        }
+
+        if (settingsWindow) {
+          await settingsWindow.setPosition(new PhysicalPosition(targetX, targetY));
+          await settingsWindow.setAlwaysOnTop(true);
+          await settingsWindow.show();
+          await settingsWindow.setFocus();
+          return;
+        }
+
+        settingsWindow = new WebviewWindow('settings', {
+          url: 'settings.html',
+          title: 'Settings',
+          width: settingsWidth,
+          height: settingsHeight,
+          resizable: false,
+          transparent: true,
+          hiddenTitle: true,
+          titleBarStyle: 'overlay',
+          alwaysOnTop: true,
+          x: targetX,
+          y: targetY,
+        });
+      }
+      
+      settingsWindow.once('tauri://created', function () {
+        // webview window successfully created
+      });
+      
+      settingsWindow.once('tauri://error', function (e) {
+        // an error happened creating the webview window
+        console.error("Error creating settings window", e);
+      });
+    } catch (error) {
+      console.error("Error opening settings window", error);
+    }
+  };
+
   const handleScreenShareToggle = async () => {
     if (isScreenShareEnabled) {
       setIsScreenShareEnabled(false);
@@ -549,18 +636,34 @@ function App() {
           return;
         }
 
-        // Show error message for other errors
+        const isMissingApiKey = error instanceof Error && error.message.includes("API key not found");
+
         const errorMessage: Message = {
           id: Date.now(),
-          text: "Sorry, I couldn't process that request. Please try again.",
+          text: isMissingApiKey
+            ? "API key not found. Please set it in settings."
+            : "Sorry, I couldn't process that request. Please try again.",
           timestamp: new Date(),
           type: 'ai',
         };
-        setMessages((prev) =>
-          prev.filter(msg => msg.id !== typingId).concat(errorMessage)
-        );
-        setIsGenerating(false);
-        abortControllerRef.current = null;
+
+        if (isMissingApiKey) {
+          void handleOpenSettings({ avoidMainWindow: true });
+        }
+
+        const finalizeError = () => {
+          setMessages((prev) =>
+            prev.filter(msg => msg.id !== typingId).concat(errorMessage)
+          );
+          setIsGenerating(false);
+          abortControllerRef.current = null;
+        };
+
+        if (isMissingApiKey) {
+          window.setTimeout(finalizeError, 1000);
+        } else {
+          finalizeError();
+        }
       });
   };
 
@@ -1112,8 +1215,11 @@ function App() {
           <button
             className="toolbar-segment toolbar-menu"
             data-tauri-drag-region-disabled
-            aria-label="Menu (inactive)"
-            title="More options"
+            aria-label="Menu"
+            title="Settings"
+            onClick={() => {
+              void handleOpenSettings();
+            }}
           >
             <svg
               width="16"

@@ -1,10 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 import { Message, SendMessageOptions, Source, AttachmentData } from "./types";
 
-// Initialize the Gemini AI client
-const ai = new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GOOGLE_GENAI_API_KEY,
-});
+function getGeminiClient() {
+  const apiKey = localStorage.getItem("gemini_api_key");
+  if (!apiKey) {
+    throw new Error("Gemini API key not found. Please set it in settings.");
+  }
+  return new GoogleGenAI({
+    apiKey,
+  });
+}
 
 /**
  * Sends a message to Gemini and returns the complete response
@@ -23,6 +28,7 @@ export async function sendMessageToGemini(
   options: SendMessageOptions = {}
 ): Promise<{ text: string; sources?: Source[]; thought?: string; thoughtDuration?: number }> {
   try {
+    const ai = getGeminiClient();
     const { thinkingEnabled = false, webSearchEnabled = false } = options;
 
     // Format conversation history for Gemini API
