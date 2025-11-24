@@ -1371,10 +1371,8 @@ function App() {
                                   const urlObj = new URL(source.url);
                                   const hostname = urlObj.hostname.replace('www.', '');
                                   
-                                  // Don't show vertexaisearch domain, it's an internal proxy
-                                  if (hostname.includes('vertexaisearch') || hostname.includes('googleusercontent')) {
-                                    return null;
-                                  }
+                                  // Check if it's a proxy domain
+                                  const isProxy = hostname.includes('vertexaisearch') || hostname.includes('googleusercontent');
 
                                   let displayTitle = source.title;
                                   let isTitleUrl = false;
@@ -1412,13 +1410,14 @@ function App() {
 
                                   return (
                                     <>
-                                      <span className="source-domain">{hostname}</span>
+                                      {!isProxy && <span className="source-domain">{hostname}</span>}
                                       {displayTitle && displayTitle !== hostname && (
                                           <>
-                                            <span className="source-divider">-</span>
+                                            {!isProxy && <span className="source-divider">-</span>}
                                             <span className="source-title">{displayTitle}</span>
                                           </>
                                       )}
+                                      {isProxy && !displayTitle && <span className="source-title">Source</span>}
                                     </>
                                   );
                                 } catch (e) {

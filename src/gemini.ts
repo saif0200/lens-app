@@ -222,13 +222,13 @@ export async function sendMessageToGemini(
 function cleanUrl(url: string): string {
   if (!url) return url;
   
-  // Check if it's a Google Vertex AI Search URL
-  if (url.includes('vertexaisearch.cloud.google.com')) {
+  // Check if it's a Google Vertex AI Search URL or Google redirect
+  if (url.includes('vertexaisearch.cloud.google.com') || url.includes('google.com/url')) {
     // 1. Try to extract from query parameters
     try {
       const urlObj = new URL(url);
       const params = new URLSearchParams(urlObj.search);
-      const candidates = ['url', 'original_url', 'q', 'source_url'];
+      const candidates = ['url', 'original_url', 'q', 'source_url', 'uri', 'redir'];
       for (const key of candidates) {
         const val = params.get(key);
         if (val && val.startsWith('http')) {
