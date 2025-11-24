@@ -230,17 +230,29 @@ function extractOpenAIResponse(response: any): { text: string; sources?: Source[
   // CLEANUP: Remove markdown links from text to avoid duplication/clutter
   // 1. Remove numeric citations [1](url) -> empty
   text = text.replace(/\[\d+\]\(https?:\/\/[^\)]+\)/g, "");
+
+  // 2. Remove links wrapped in parentheses ([Title](url))
+  text = text.replace(/[ \t]*\(\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\)/g, "");
+
+  // 3. Remove generic links [website](url)
+  text = text.replace(/[ \t]*\[(website|source|link|page)\]\((https?:\/\/[^\)]+)\)/gi, "");
+
+  // 4. Remove list items that are just generic links
+  text = text.replace(/^\s*[\-\*1-9\.]+\s*\[(website|source|link|page)\]\((https?:\/\/[^\)]+)\)\s*$/gim, "");
+
+  // 5. Remove "Sources:" header if it's at the end
+  text = text.replace(/(Sources?|References?):\s*$/gi, "");
   
-  // 2. Replace named links [Title](url) -> Title
+  // 6. Replace named links [Title](url) -> Title
   text = text.replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, "$1");
 
-  // 3. Remove standalone numeric citations like [1], [2]
+  // 7. Remove standalone numeric citations like [1], [2]
   text = text.replace(/\[\d+\]/g, "");
 
-  // 4. Remove OpenAI style source markers like 【11†source】
+  // 8. Remove OpenAI style source markers like 【11†source】
   text = text.replace(/【\d+†source】/g, "");
   
-  // 5. Clean up any double spaces or trailing spaces left behind
+  // 9. Clean up any double spaces or trailing spaces left behind
   text = text.replace(/  +/g, " ").trim();
 
   return { text, sources: sources.length > 0 ? sources : undefined };
