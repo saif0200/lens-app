@@ -67,13 +67,30 @@ fn capture_screen() -> Result<String, String> {
 
     let output_path = path.to_str().ok_or("Invalid temp path")?;
 
+    #[cfg(target_os = "macos")]
     let status = Command::new("screencapture")
         .args(["-x", output_path])
         .status()
         .map_err(|e| e.to_string())?;
 
+    #[cfg(target_os = "windows")]
+    let status = {
+        // Use PowerShell to capture the screen on Windows
+        let ps_script = format!(
+            r#"Add-Type -AssemblyName System.Windows.Forms; $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bitmap = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height); $graphics = [System.Drawing.Graphics]::FromImage($bitmap); $graphics.CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size); $bitmap.Save('{}')"#,
+            output_path.replace("'", "''")
+        );
+        Command::new("powershell")
+            .args(["-NoProfile", "-Command", &ps_script])
+            .status()
+            .map_err(|e| e.to_string())?
+    };
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    return Err("Screen capture is not supported on this platform".to_string());
+
     if !status.success() {
-        return Err(format!("screencapture exited with status {}", status));
+        return Err(format!("Screen capture exited with status {}", status));
     }
 
     let bytes = fs::read(&path).map_err(|e| e.to_string())?;
