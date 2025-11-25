@@ -16,12 +16,15 @@ jobs:
           - platform: macos-latest
             target: aarch64-apple-darwin
             name: macOS ARM
-          - platform: macos-13
+            bundles: dmg
+          - platform: macos-latest
             target: x86_64-apple-darwin
             name: macOS Intel
+            bundles: app
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
             name: Windows
+            bundles: msi,nsis
 
     runs-on: ${{ matrix.platform }}
     name: Build (${{ matrix.name }})
@@ -54,7 +57,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
