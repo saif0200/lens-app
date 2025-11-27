@@ -91,6 +91,7 @@ function App() {
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('low');
   const [isGeminiThinkingEnabled, setIsGeminiThinkingEnabled] = useState(false);
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
+  const webSearchEnabledRef = useRef(false);
   const [isWindowVisible, setIsWindowVisible] = useState(true);
   const [attachments, setAttachments] = useState<{ id: string; file: File; preview: string; base64: string; mimeType: string; text?: string }[]>([]);
   const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false);
@@ -116,6 +117,11 @@ function App() {
       ? navigator.platform.toUpperCase().includes("MAC")
       : false;
   const modKey = isMac ? "⌘" : "Ctrl";
+
+  // Keep ref in sync with state for immediate access
+  useEffect(() => {
+    webSearchEnabledRef.current = isWebSearchEnabled;
+  }, [isWebSearchEnabled]);
 
   const handleCopyCodeBlock = async (blockId: string, code: string) => {
     if (!navigator.clipboard) {
@@ -516,6 +522,26 @@ function App() {
     });
   };
 
+  // Detect if message should trigger auto web search
+  const shouldAutoEnableWebSearch = (text: string): boolean => {
+    // Check for URLs (with or without protocol)
+    const urlPattern = /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\/[^\s]*)?/i;
+    if (urlPattern.test(text)) return true;
+
+    // Check for search-related phrases (case insensitive)
+    const searchPhrases = [
+      /\bsearch\s+(for|the|about|up)\b/i,
+      /\blook\s+up\b/i,
+      /\bfind\s+(me\s+)?(information|info|details|articles?|news)\b/i,
+      /\bwhat('s| is| are)\s+(the\s+)?(latest|current|recent|new)\b/i,
+      /\bgoogle\b/i,
+      /\bbrowse\b/i,
+      /\bcheck\s+(the\s+)?(web|internet|online)\b/i,
+    ];
+
+    return searchPhrases.some(pattern => pattern.test(text));
+  };
+
   const handleSendMessage = async () => {
     if ((inputValue.trim() === "" && attachments.length === 0) || isGenerating) return;
 
@@ -595,6 +621,10 @@ function App() {
     const history = messages.filter(msg => msg.type !== 'typing');
 
     // Call AI provider and wait for complete response
+    // Auto-enable web search if message contains URLs or search-related phrases
+    const autoWebSearch = shouldAutoEnableWebSearch(messageText);
+    const webSearchValue = webSearchEnabledRef.current || autoWebSearch;
+    console.log('[App] Sending message with webSearchEnabled:', webSearchValue, '(manual:', webSearchEnabledRef.current, ', auto:', autoWebSearch, ')');
     sendMessage(
       currentProvider,
       userMessage.text,
@@ -604,7 +634,7 @@ function App() {
       {
         reasoningEffort,
         thinkingEnabled: isGeminiThinkingEnabled,
-        webSearchEnabled: isWebSearchEnabled,
+        webSearchEnabled: webSearchValue,
         model: currentProvider === 'openai' ? openaiModel : geminiModel
       }
     )
@@ -1656,7 +1686,11 @@ function App() {
             ) : null}
             <button
               className={`web-search-toggle ${isWebSearchEnabled ? 'active' : ''}`}
-              onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
+              onClick={() => {
+                const newValue = !isWebSearchEnabled;
+                webSearchEnabledRef.current = newValue; // Update ref immediately
+                setIsWebSearchEnabled(newValue);
+              }}
               title={`Web Search: ${isWebSearchEnabled ? 'On' : 'Off'}`}
               aria-label="Toggle web search"
               aria-pressed={isWebSearchEnabled}

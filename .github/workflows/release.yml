@@ -14,10 +14,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-13'
-            args: '--target x86_64-apple-darwin'
+          # Temporarily disabled to save GitHub Actions minutes
+          # - platform: 'macos-latest'
+          #   args: '--target aarch64-apple-darwin'
+          # - platform: 'macos-13'
+          #   args: '--target x86_64-apple-darwin'
           - platform: 'windows-latest'
             args: ''
 
