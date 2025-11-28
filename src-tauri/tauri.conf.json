@@ -46,7 +46,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM1MUE1M0NBQ0Y5OUNEOTkKUldTWnpablB5bE1heGJnelEzQjIzRCs1dDA3QUg0OU5aZ2dQb0tGZ0g2RVBpNG9JTU5jcE8ya1UK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ3QkRFMzAwM0IxOEJBRkEKUldUNnVoZzdBT085MTVwUWpjRk54aHI4T1g2STJnYjhaNWNXdWpQd0xOMUwrRVBHdmdGOVh2azgK",
       "endpoints": [
         "https://github.com/saif0200/lens-app/releases/latest/download/latest.json"
       ],
