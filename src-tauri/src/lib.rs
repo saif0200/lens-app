@@ -16,7 +16,6 @@ fn greet(name: &str) -> String {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -42,6 +41,9 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+
             #[cfg(target_os = "macos")]
             {
                 use cocoa::appkit::{NSApplication, NSApplicationActivationPolicy, NSWindow, NSWindowCollectionBehavior};
