@@ -48,17 +48,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Write signing key (Windows)
-        if: matrix.platform == 'windows-latest'
+      - name: Normalize signing key
         shell: bash
-        run: printf '%s' "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" > $RUNNER_TEMP/tauri-signing-key.txt
+        run: |
+          key="${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
+          decoded="$(printf '%s' "$key" | base64 -d 2>/dev/null || printf '%s' "$key")"
+          tmp="$RUNNER_TEMP/tauri-signing-key.txt"
+          printf '%s' "$decoded" > "$tmp"
+          echo "TAURI_SIGNING_PRIVATE_KEY=$tmp" >> "$GITHUB_ENV"
+          echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=" >> "$GITHUB_ENV"
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ matrix.platform == 'windows-latest' && format('{0}/tauri-signing-key.txt', runner.temp) || secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
