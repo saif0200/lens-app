@@ -1,0 +1,135 @@
+.update-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.update-popup {
+  background: var(--bg-secondary, #1e1e1e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 12px;
+  padding: 20px;
+  width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.update-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.update-popup-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.update-icon {
+  font-size: 20px;
+}
+
+.update-popup-content {
+  margin-bottom: 20px;
+}
+
+.update-version {
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.update-notes {
+  background: var(--bg-tertiary, #2a2a2a);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.update-notes-label {
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  margin: 0 0 6px 0;
+}
+
+.update-notes-content {
+  color: var(--text-primary, #fff);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.update-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.update-progress-bar {
+  height: 6px;
+  background: var(--bg-tertiary, #2a2a2a);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.update-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.update-progress-text {
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  text-align: center;
+}
+
+.update-popup-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.update-btn-later,
+.update-btn-install {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.update-btn-later {
+  background: var(--bg-tertiary, #2a2a2a);
+  color: var(--text-secondary, #888);
+}
+
+.update-btn-later:hover {
+  background: var(--bg-hover, #333);
+  color: var(--text-primary, #fff);
+}
+
+.update-btn-install {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.update-btn-install:hover {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}

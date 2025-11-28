@@ -41,6 +41,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM1MUE1M0NBQ0Y5OUNEOTkKUldTWnpablB5bE1heGJnelEzQjIzRCs1dDA3QUg0OU5aZ2dQb0tGZ0g2RVBpNG9JTU5jcE8ya1UK",
+      "endpoints": [
+        "https://github.com/saif0200/lens-app/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

@@ -17,6 +17,7 @@ import { storage } from "./services/storage";
 import { cleanAiText } from "./utils/textUtils";
 import { useClipboard } from "./hooks/useClipboard";
 import { OPENAI_MODELS, GEMINI_MODELS } from "./config/models";
+import { UpdateChecker } from "./components/UpdatePopup";
 
 type MathJaxObject = {
   typesetPromise?: (elements?: (Element | Document)[]) => Promise<void>;
@@ -1045,10 +1046,11 @@ function App() {
   }, [currentProvider, geminiModel, reasoningEffort]);
 
   return (
-    <div 
+    <div
       className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}
       style={{ zoom: zoomLevel } as React.CSSProperties}
     >
+      <UpdateChecker />
       <div className="toolbar">
         <button
           className="toolbar-segment drag-handle"
