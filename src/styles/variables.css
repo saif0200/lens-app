@@ -1,0 +1,38 @@
+:root {
+  /* Animation timing variables */
+  --anim-duration-fast: 160ms;
+  --anim-duration-medium: 150ms;
+  --anim-fade-duration: var(--anim-duration-medium);
+  --anim-ease: cubic-bezier(0.22, 0.9, 0.36, 1);
+  --anim-ease-exit: cubic-bezier(0.4, 0, 0.6, 1);
+  --anim-ease-entrance: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --anim-exit-duration: 200ms;
+  --anim-entrance-duration: 320ms;
+
+  /* Colors */
+  --bg-transparent: transparent;
+  --toolbar-bg: rgba(0, 0, 0, 0.75);
+  --toolbar-border: rgba(255, 255, 255, 0.15);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --segment-hover: rgba(255, 255, 255, 0.1);
+  --segment-active: rgba(255, 255, 255, 0.15);
+  --keycap-bg: rgba(0, 0, 0, 0.3);
+  --keycap-border: rgba(255, 255, 255, 0.15);
+  --focus-ring: rgba(99, 179, 237, 0.6);
+
+  /* Spacing */
+  --toolbar-padding: 4px;
+  --segment-gap: 1px;
+  --segment-padding-x: 8px;
+  --segment-padding-y: 6px;
+  --keycap-size: 18px;
+
+  /* Border Radius */
+  --toolbar-radius: 20px;
+  --segment-radius: 16px;
+  --keycap-radius: 5px;
+
+  /* Shadows */
+  --toolbar-glow: 0 0 0 1px var(--toolbar-border) inset;
+}

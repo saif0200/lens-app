@@ -1,0 +1,27 @@
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .messages-area {
+    scroll-behavior: auto;
+  }
+
+  .input-container {
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .app.with-input .input-container {
+    filter: none !important;
+  }
+
+  .reset-button {
+    transform: none !important;
+    filter: none !important;
+    transition: opacity 0.15s ease, background 0.2s ease, color 0.2s ease !important;
+  }
+}

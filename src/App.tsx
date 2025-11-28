@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { AnchorHTMLAttributes, HTMLAttributes } from "react";
-import "./App.css";
+import "./styles/index.css";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import ReactMarkdown from "react-markdown";
@@ -13,31 +13,10 @@ import { Message, AIProvider, ReasoningEffort, AttachmentData } from "./types";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { PhysicalPosition } from "@tauri-apps/api/dpi";
-
-const cleanAiText = (text: string): string => {
-  if (!text) {
-    return text;
-  }
-
-  const normalizedLineEndings = text.replace(/\r\n/g, "\n");
-  const trimmedLineEnds = normalizedLineEndings
-    .split("\n")
-    .map((line) => line.trimEnd())
-    .join("\n");
-
-  const tightenedPunctuation = trimmedLineEnds
-    .replace(/([^\s])\s+([.,!?;:])/g, "$1$2")
-    .replace(/([^\s])\s+([\)\]\}])/g, "$1$2");
-
-  // Escape math delimiters so ReactMarkdown doesn't consume the backslashes
-  const escapedMath = tightenedPunctuation
-    .replace(/\\\(/g, "\\\\(")
-    .replace(/\\\)/g, "\\\\)")
-    .replace(/\\\[/g, "\\\\[")
-    .replace(/\\\]/g, "\\\\]");
-
-  return escapedMath.trim();
-};
+import { storage } from "./services/storage";
+import { cleanAiText } from "./utils/textUtils";
+import { useClipboard } from "./hooks/useClipboard";
+import { OPENAI_MODELS, GEMINI_MODELS } from "./config/models";
 
 type MathJaxObject = {
   typesetPromise?: (elements?: (Element | Document)[]) => Promise<void>;
@@ -66,20 +45,6 @@ const MarkdownLink = ({ node, ...props }: MarkdownLinkProps) => {
   return <a {...props} target="_blank" rel="noopener noreferrer" />;
 };
 
-const OPENAI_MODELS = [
-  { id: 'gpt-5-nano', name: 'GPT-5 nano' },
-  { id: 'gpt-5-mini', name: 'GPT-5 mini' },
-  { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex' },
-  { id: 'gpt-5.1', name: 'GPT-5.1' },
-  { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex mini' },
-];
-
-const GEMINI_MODELS = [
-  { id: 'gemini-flash-latest', name: 'Gemini 2.5 Flash' },
-  { id: 'gemini-flash-lite-latest', name: 'Gemini 2.5 Flash-Lite' },
-  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro Preview' },
-];
-
 function App() {
   const [showInput, setShowInput] = useState(false);
   const [hasExpanded, setHasExpanded] = useState(false);
@@ -98,16 +63,14 @@ function App() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [expandedThoughts, setExpandedThoughts] = useState<Set<number>>(new Set());
-  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
-  const [copiedCodeBlockId, setCopiedCodeBlockId] = useState<string | null>(null);
+  const { copiedId: copiedMessageId, copy: copyMessage } = useClipboard<number>();
+  const { copiedId: copiedCodeBlockId, copy: copyCodeBlock } = useClipboard<string>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isAnimatingRef = useRef(false);
   const lastScrollKeyRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const copyResetTimerRef = useRef<number | null>(null);
-  const codeBlockCopyResetTimerRef = useRef<number | null>(null);
   const lastFocusTimeRef = useRef(0);
   const prevShowInputRef = useRef(showInput);
   const resizeTimeoutRef = useRef<number | null>(null);
@@ -122,29 +85,6 @@ function App() {
   useEffect(() => {
     webSearchEnabledRef.current = isWebSearchEnabled;
   }, [isWebSearchEnabled]);
-
-  const handleCopyCodeBlock = async (blockId: string, code: string) => {
-    if (!navigator.clipboard) {
-      console.warn("Clipboard API not available");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopiedCodeBlockId(blockId);
-
-      if (codeBlockCopyResetTimerRef.current) {
-        window.clearTimeout(codeBlockCopyResetTimerRef.current);
-      }
-
-      codeBlockCopyResetTimerRef.current = window.setTimeout(() => {
-        setCopiedCodeBlockId((current) => (current === blockId ? null : current));
-        codeBlockCopyResetTimerRef.current = null;
-      }, 800);
-    } catch (error) {
-      console.error("Failed to copy code block:", error);
-    }
-  };
 
   const toggleThought = (messageId: number) => {
     setExpandedThoughts(prev => {
@@ -229,7 +169,7 @@ function App() {
             type="button"
             className="code-copy-button"
             onClick={() => {
-              void handleCopyCodeBlock(blockId, childText);
+              void copyCodeBlock(blockId, childText);
             }}
             aria-label="Copy code"
           >
@@ -697,29 +637,6 @@ function App() {
       });
   };
 
-  const handleCopyResponse = async (messageId: number, text: string) => {
-    if (!navigator.clipboard) {
-      console.warn("Clipboard API not available");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedMessageId(messageId);
-
-      if (copyResetTimerRef.current) {
-        window.clearTimeout(copyResetTimerRef.current);
-      }
-
-      copyResetTimerRef.current = window.setTimeout(() => {
-        setCopiedMessageId((current) => (current === messageId ? null : current));
-        copyResetTimerRef.current = null;
-      }, 800);
-    } catch (error) {
-      console.error("Failed to copy AI response:", error);
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -842,9 +759,8 @@ function App() {
 
   useEffect(() => {
     // Apply content protection setting on startup
-    const storedContentProtection = localStorage.getItem("content_protection");
-    if (storedContentProtection) {
-      const enabled = storedContentProtection === "true";
+    const enabled = storage.getContentProtection();
+    if (enabled) {
       invoke("set_content_protection", { enabled });
     }
   }, []);
@@ -924,16 +840,6 @@ function App() {
     };
   }, [messages]);
 
-  useEffect(() => {
-    return () => {
-      if (copyResetTimerRef.current) {
-        window.clearTimeout(copyResetTimerRef.current);
-      }
-      if (codeBlockCopyResetTimerRef.current) {
-        window.clearTimeout(codeBlockCopyResetTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -1463,7 +1369,7 @@ function App() {
                           type="button"
                           className={`ai-copy-button ${copiedMessageId === message.id ? "copied" : ""}`}
                           onClick={() => {
-                            void handleCopyResponse(message.id, message.text);
+                            void copyMessage(message.id, message.text);
                           }}
                           aria-label="Copy AI response"
                         >

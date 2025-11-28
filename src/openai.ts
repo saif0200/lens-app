@@ -7,9 +7,11 @@ import type {
   ResponseInputText,
 } from "openai/resources/responses/responses";
 import { Message, SendMessageOptions, Source, AttachmentData } from "./types";
+import { storage } from "./services/storage";
+import { extractMarkdownLinks, cleanResponseText } from "./utils/responseProcessor";
 
 function getOpenAIClient() {
-  const apiKey = localStorage.getItem("openai_api_key");
+  const apiKey = storage.getOpenAIKey();
   if (!apiKey) {
     throw new Error("OpenAI API key not found. Please set it in settings.");
   }
@@ -171,12 +173,7 @@ function extractOpenAIResponse(response: any): { text: string; sources?: Source[
 
       // Check for tool calls (web search)
       if (item.type === "tool_call" && item.tool_call?.type === "web_search_preview") {
-        // Try to extract sources from tool output if available
-        // Note: The exact structure of web_search_preview output in responses API is not fully documented
-        // but we can try to find it in the tool_call object or subsequent tool_output
-        // For now, we'll look for a 'citations' or 'results' field in the tool_call
         const searchData = item.tool_call;
-        // This is a best-effort extraction based on common patterns
         if (searchData.citations && Array.isArray(searchData.citations)) {
            for (const citation of searchData.citations) {
              if (citation.url && citation.title) {
@@ -214,46 +211,16 @@ function extractOpenAIResponse(response: any): { text: string; sources?: Source[
     text = fallback.join("\n\n").trim();
   }
 
-  // Fallback: Extract markdown links from text
-  // This ensures that if the model cites sources in the text (e.g. [Title](url)),
-  // they also appear as source chips even if the tool output extraction failed.
-  const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
-  let match;
-  while ((match = linkRegex.exec(text)) !== null) {
-    const [_, title, url] = match;
-    // Avoid duplicates
-    if (!sources.some(s => s.url === url)) {
-      sources.push({ title, url });
+  // Extract markdown links as sources using shared utility
+  const linkSources = extractMarkdownLinks(text);
+  for (const linkSource of linkSources) {
+    if (!sources.some(s => s.url === linkSource.url)) {
+      sources.push(linkSource);
     }
   }
 
-  // CLEANUP: Remove markdown links from text to avoid duplication/clutter
-  // 1. Remove numeric citations [1](url) -> empty
-  text = text.replace(/\[\d+\]\(https?:\/\/[^\)]+\)/g, "");
-
-  // 2. Remove links wrapped in parentheses ([Title](url))
-  text = text.replace(/[ \t]*\(\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\)/g, "");
-
-  // 3. Remove generic links [website](url)
-  text = text.replace(/[ \t]*\[(website|source|link|page)\]\((https?:\/\/[^\)]+)\)/gi, "");
-
-  // 4. Remove list items that are just generic links
-  text = text.replace(/^\s*[\-\*1-9\.]+\s*\[(website|source|link|page)\]\((https?:\/\/[^\)]+)\)\s*$/gim, "");
-
-  // 5. Remove "Sources:" header if it's at the end
-  text = text.replace(/(Sources?|References?):\s*$/gi, "");
-  
-  // 6. Replace named links [Title](url) -> Title
-  text = text.replace(/\[([^\]]+)\]\(https?:\/\/[^\)]+\)/g, "$1");
-
-  // 7. Remove standalone numeric citations like [1], [2]
-  text = text.replace(/\[\d+\]/g, "");
-
-  // 8. Remove OpenAI style source markers like 【11†source】
-  text = text.replace(/【\d+†source】/g, "");
-  
-  // 9. Clean up any double spaces or trailing spaces left behind
-  text = text.replace(/  +/g, " ").trim();
+  // Clean up response text using shared utility
+  text = cleanResponseText(text);
 
   return { text, sources: sources.length > 0 ? sources : undefined };
 }

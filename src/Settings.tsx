@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import "./styles/index.css";
+import { storage } from "./services/storage";
 
 function Settings() {
   const [openaiKey, setOpenaiKey] = useState("");
@@ -9,35 +10,34 @@ function Settings() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const storedOpenaiKey = localStorage.getItem("openai_api_key");
-    const storedGeminiKey = localStorage.getItem("gemini_api_key");
-    const storedContentProtection = localStorage.getItem("content_protection");
-    
+    const storedOpenaiKey = storage.getOpenAIKey();
+    const storedGeminiKey = storage.getGeminiKey();
+    const storedContentProtection = storage.getContentProtection();
+
     if (storedOpenaiKey) setOpenaiKey(storedOpenaiKey);
     if (storedGeminiKey) setGeminiKey(storedGeminiKey);
     if (storedContentProtection) {
-      const enabled = storedContentProtection === "true";
-      setContentProtection(enabled);
-      invoke("set_content_protection", { enabled });
+      setContentProtection(true);
+      invoke("set_content_protection", { enabled: true });
     }
   }, []);
 
   const handleSave = () => {
     if (openaiKey) {
-      localStorage.setItem("openai_api_key", openaiKey);
+      storage.setOpenAIKey(openaiKey);
     } else {
-      localStorage.removeItem("openai_api_key");
+      storage.removeOpenAIKey();
     }
 
     if (geminiKey) {
-      localStorage.setItem("gemini_api_key", geminiKey);
+      storage.setGeminiKey(geminiKey);
     } else {
-      localStorage.removeItem("gemini_api_key");
+      storage.removeGeminiKey();
     }
 
-    localStorage.setItem("content_protection", String(contentProtection));
+    storage.setContentProtection(contentProtection);
     invoke("set_content_protection", { enabled: contentProtection });
-    
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -45,10 +45,10 @@ function Settings() {
   const handleClear = (keyType: 'openai' | 'gemini') => {
     if (keyType === 'openai') {
       setOpenaiKey("");
-      localStorage.removeItem("openai_api_key");
+      storage.removeOpenAIKey();
     } else {
       setGeminiKey("");
-      localStorage.removeItem("gemini_api_key");
+      storage.removeGeminiKey();
     }
   };
 

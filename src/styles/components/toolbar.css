@@ -1,0 +1,206 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--segment-gap);
+  padding: var(--toolbar-padding);
+  background: var(--toolbar-bg);
+  border-radius: var(--toolbar-radius);
+  box-shadow: var(--toolbar-glow);
+  border: 1px solid var(--toolbar-border);
+  position: relative;
+  transition: box-shadow 180ms var(--anim-ease-exit);
+}
+
+.app.with-input .toolbar {
+  box-shadow: var(--toolbar-glow);
+  transition: box-shadow 320ms var(--anim-ease-entrance);
+}
+
+.toolbar-segment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--segment-padding-y) var(--segment-padding-x);
+  background: transparent;
+  border: none;
+  border-radius: var(--segment-radius);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-segment:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.toolbar-segment:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.toolbar-segment:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.toolbar-segment:active {
+  background: var(--segment-active);
+}
+
+.toolbar-segment:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.drag-handle {
+  cursor: grab;
+  padding: var(--segment-padding-y) 12px;
+  -webkit-app-region: drag;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-handle svg {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.drag-handle:hover svg {
+  opacity: 0.8;
+}
+
+.action-label {
+  font-size: 13px;
+}
+
+.provider-toggle .action-label {
+  min-width: 48px;
+  text-align: center;
+}
+
+.screen-share-toggle {
+  gap: 6px;
+}
+
+.screen-share-toggle.active,
+.screen-share-toggle[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.screen-share-toggle.active:hover,
+.screen-share-toggle[aria-pressed="true"]:hover {
+  background: var(--segment-hover);
+}
+
+.screen-share-toggle.active:active,
+.screen-share-toggle[aria-pressed="true"]:active {
+  background: var(--segment-active);
+}
+
+.screen-share-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.screen-share-toggle[aria-pressed="true"] .screen-share-indicator {
+  background: #4ade80;
+  opacity: 1;
+}
+
+.screen-share-toggle:active .screen-share-indicator {
+  transform: scale(0.85);
+}
+
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--keycap-size);
+  height: var(--keycap-size);
+  background: var(--keycap-bg);
+  border: 1px solid var(--keycap-border);
+  border-radius: var(--keycap-radius);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+  padding-bottom: 2px;
+}
+
+.keycap-enter {
+  padding-bottom: 0;
+  padding-top: 2px;
+}
+
+.toolbar-menu {
+  padding: var(--segment-padding-y) 8px;
+}
+
+.toolbar-menu svg {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.toolbar-menu:hover svg {
+  opacity: 1;
+}
+
+.reset-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  margin-left: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.reset-button:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.reset-button:active {
+  background: var(--segment-active);
+}
+
+.reset-button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.reset-button svg {
+  pointer-events: none;
+  display: block;
+}

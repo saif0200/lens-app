@@ -1,0 +1,300 @@
+.input-container {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: scale(0.96) translateY(-4px);
+  transform-origin: top center;
+  filter: blur(8px);
+  transition:
+    max-height var(--anim-exit-duration) var(--anim-ease-exit),
+    opacity calc(var(--anim-exit-duration) * 0.8) var(--anim-ease-exit),
+    transform var(--anim-exit-duration) var(--anim-ease-exit),
+    filter calc(var(--anim-exit-duration) * 0.7) var(--anim-ease-exit),
+    margin-top var(--anim-exit-duration) var(--anim-ease-exit);
+  will-change: transform, opacity, max-height, filter;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app.chat-expanded .input-container {
+  transform: scale(0.99) translateY(-2px);
+  filter: blur(4px);
+  transition:
+    max-height 200ms var(--anim-ease-exit),
+    opacity 150ms var(--anim-ease-exit),
+    transform 200ms var(--anim-ease-exit),
+    filter 150ms var(--anim-ease-exit),
+    margin-top 200ms var(--anim-ease-exit);
+}
+
+.app.with-input .input-container {
+  max-height: 300px;
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: blur(0px);
+  margin-top: 8px;
+  transition:
+    max-height var(--anim-entrance-duration) var(--anim-ease-entrance),
+    transform var(--anim-entrance-duration) var(--anim-ease-entrance),
+    margin-top var(--anim-entrance-duration) var(--anim-ease-entrance),
+    filter calc(var(--anim-entrance-duration) * 0.65) var(--anim-ease-entrance) 60ms,
+    opacity calc(var(--anim-entrance-duration) * 0.7) ease-out 40ms;
+}
+
+.app.with-input.chat-expanded .input-container {
+  max-height: 800px;
+  transition:
+    max-height 420ms var(--anim-ease-entrance),
+    transform 420ms var(--anim-ease-entrance),
+    margin-top 420ms var(--anim-ease-entrance),
+    filter 300ms var(--anim-ease-entrance) 50ms,
+    opacity 300ms ease-out 50ms;
+}
+
+.chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: var(--toolbar-bg);
+  border-radius: var(--toolbar-radius);
+  box-shadow: var(--toolbar-glow);
+  border: 1px solid var(--toolbar-border);
+  width: 100%;
+  overflow: hidden;
+  transition:
+    box-shadow 300ms ease,
+    height 350ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.chat-wrapper.expanded {
+  height: auto;
+  min-height: 240px;
+  box-shadow: var(--toolbar-glow);
+}
+
+.input-area {
+  display: flex;
+  align-items: center;
+  gap: var(--segment-gap);
+  padding: var(--toolbar-padding);
+}
+
+.input-area input {
+  flex-grow: 1;
+  padding: 4px var(--segment-padding-x);
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.input-area input:focus {
+  outline: none;
+}
+
+.input-area input::placeholder {
+  color: var(--text-secondary);
+}
+
+.send-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--segment-radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.send-button:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.send-button:active {
+  background: var(--segment-active);
+}
+
+.send-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.send-button:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.send-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.stop-button {
+  color: #ef4444;
+}
+
+.stop-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  padding: 0 12px 8px;
+  gap: 8px;
+}
+
+.chat-wrapper.expanded .input-footer {
+  padding-bottom: 12px;
+}
+
+.reasoning-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 28px;
+  padding: 0 8px;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--segment-radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+}
+
+.reasoning-toggle:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.reasoning-toggle.effort-low {
+  color: var(--text-secondary);
+}
+
+.reasoning-toggle.effort-low:hover {
+  color: var(--text-primary);
+  background: var(--segment-hover);
+}
+
+.reasoning-toggle.effort-medium {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: transparent;
+}
+
+.reasoning-toggle.effort-high {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.1);
+  border-color: transparent;
+}
+
+.web-search-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 28px;
+  padding: 0 8px;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--segment-radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 4px;
+}
+
+.web-search-toggle:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.web-search-toggle.active,
+.web-search-toggle[aria-pressed="true"] {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+  border-color: transparent;
+}
+
+.web-search-toggle:active {
+  transform: scale(0.95);
+}
+
+.reasoning-toggle:active {
+  transform: scale(0.95);
+}
+
+.reasoning-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reasoning-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.model-selector-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  border-radius: var(--segment-radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.model-selector-wrapper:hover {
+  background: var(--segment-hover);
+  color: var(--text-primary);
+}
+
+.model-selector-value {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 24px 0 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: inherit;
+}
+
+.model-selector {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.model-selector-icon {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.model-selector option {
+  background: #2a2a2a;
+  color: #ffffff;
+}

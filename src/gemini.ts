@@ -1,8 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { Message, SendMessageOptions, Source, AttachmentData } from "./types";
+import { storage } from "./services/storage";
+import { extractMarkdownLinks, removeCitations, cleanUrl } from "./utils/responseProcessor";
 
 function getGeminiClient() {
-  const apiKey = localStorage.getItem("gemini_api_key");
+  const apiKey = storage.getGeminiKey();
   if (!apiKey) {
     throw new Error("Gemini API key not found. Please set it in settings.");
   }
@@ -183,24 +185,17 @@ export async function sendMessageToGemini(
 
     // Fallback: Extract markdown links from text if no grounding metadata found
     if (sources.length === 0) {
-      const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
-      let match;
-      while ((match = linkRegex.exec(text)) !== null) {
-        const [_, title, url] = match;
-        const cleanedUrl = cleanUrl(url);
+      const linkSources = extractMarkdownLinks(text);
+      for (const linkSource of linkSources) {
+        const cleanedUrl = cleanUrl(linkSource.url);
         if (!sources.some(s => s.url === cleanedUrl)) {
-          sources.push({ title, url: cleanedUrl });
+          sources.push({ title: linkSource.title, url: cleanedUrl });
         }
       }
     }
 
-    // CLEANUP: Remove citations from text to avoid duplication/clutter
-    // 1. Remove numeric citations [1](url) -> empty
-    text = text.replace(/\[\d+\]\(https?:\/\/[^\)]+\)/g, "");
-    // 2. Remove standalone numeric citations like [1], [2]
-    text = text.replace(/\[\d+\]/g, "");
-    // 3. Clean up any double spaces
-    text = text.replace(/  +/g, " ").trim();
+    // Clean up response text using shared utility
+    text = removeCitations(text);
 
     // Return the complete response text and sources
     return {
@@ -219,64 +214,4 @@ export async function sendMessageToGemini(
   }
 }
 
-function cleanUrl(url: string): string {
-  if (!url) return url;
-  
-  // Check if it's a Google Vertex AI Search URL or Google redirect
-  if (url.includes('vertexaisearch.cloud.google.com') || url.includes('google.com/url')) {
-    // 1. Try to extract from query parameters
-    try {
-      const urlObj = new URL(url);
-      const params = new URLSearchParams(urlObj.search);
-      const candidates = ['url', 'original_url', 'q', 'source_url', 'uri', 'redir'];
-      for (const key of candidates) {
-        const val = params.get(key);
-        if (val && val.startsWith('http')) {
-          return val;
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // 2. Try to find a nested URL in the string (decoded or raw)
-    // We look for http:// or https:// that is NOT at the start
-    const match = url.match(/(https?:\/\/.+)/);
-    if (match && match[1]) {
-      const potentialUrl = match[1];
-      // If the match is exactly the same as the input url, it means we just matched the start.
-      // We want to find a *nested* url.
-      if (potentialUrl !== url) {
-         return potentialUrl;
-      }
-      
-      // If it is the same, let's try to find *another* http inside it
-      const secondHttpIndex = url.indexOf('http', 4);
-      if (secondHttpIndex !== -1) {
-        return url.substring(secondHttpIndex);
-      }
-    }
-    
-    // 3. Try decoding and looking again
-    try {
-        const decoded = decodeURIComponent(url);
-        if (decoded !== url) {
-            const matchDecoded = decoded.match(/(https?:\/\/.+)/);
-            if (matchDecoded && matchDecoded[1]) {
-                 const potentialUrl = matchDecoded[1];
-                 if (potentialUrl !== decoded) {
-                     return potentialUrl;
-                 }
-                 const secondHttpIndex = decoded.indexOf('http', 4);
-                 if (secondHttpIndex !== -1) {
-                    return decoded.substring(secondHttpIndex);
-                 }
-            }
-        }
-    } catch (e) {
-        // ignore
-    }
-  }
-  return url;
-}
 

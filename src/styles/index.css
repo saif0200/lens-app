@@ -1,0 +1,11 @@
+/* Main CSS entry point - imports all modular styles */
+@import "./variables.css";
+@import "./base.css";
+@import "./components/toolbar.css";
+@import "./components/input.css";
+@import "./components/messages.css";
+@import "./components/codeBlock.css";
+@import "./components/attachments.css";
+@import "./components/thinking.css";
+@import "./components/settings.css";
+@import "./layout/responsive.css";
