@@ -48,13 +48,14 @@ jobs:
       - name: Write signing key (Windows)
         if: matrix.platform == 'windows-latest'
         shell: bash
-        run: echo "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" > $RUNNER_TEMP/tauri-signing-key.txt
+        run: printf '%s' "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" > $RUNNER_TEMP/tauri-signing-key.txt
 
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ matrix.platform == 'windows-latest' && format('{0}/tauri-signing-key.txt', runner.temp) || secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '${{ github.ref_name }}'
