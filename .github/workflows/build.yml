@@ -51,12 +51,15 @@ jobs:
       - name: Normalize signing key
         shell: bash
         run: |
-          key="${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}"
-          decoded="$(printf '%s' "$key" | base64 -d 2>/dev/null || printf '%s' "$key")"
-          tmp="$RUNNER_TEMP/tauri-signing-key.txt"
-          printf '%s' "$decoded" > "$tmp"
-          echo "TAURI_SIGNING_PRIVATE_KEY=$tmp" >> "$GITHUB_ENV"
-          echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=" >> "$GITHUB_ENV"
+          if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
+            echo "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" > "$RUNNER_TEMP/tauri.key"
+            echo "TAURI_SIGNING_PRIVATE_KEY=$RUNNER_TEMP/tauri.key" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
+            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          else
+            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=" >> "$GITHUB_ENV"
+          fi
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0

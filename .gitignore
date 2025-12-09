@@ -30,3 +30,9 @@ src-tauri/target
 *.njsproj
 *.sln
 *.sw?
+
+# Tauri signing keys
+*.key
+key-password.txt
+lens-app.key
+lens-app.key.pub
