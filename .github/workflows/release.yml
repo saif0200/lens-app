@@ -49,7 +49,12 @@ jobs:
         shell: bash
         run: |
           if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" ]; then
-            echo "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" > "$RUNNER_TEMP/tauri.key"
+            echo "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" > "$RUNNER_TEMP/tauri.key.orig"
+            if grep -q "untrusted comment" "$RUNNER_TEMP/tauri.key.orig"; then
+              cp "$RUNNER_TEMP/tauri.key.orig" "$RUNNER_TEMP/tauri.key"
+            else
+              base64 -d "$RUNNER_TEMP/tauri.key.orig" > "$RUNNER_TEMP/tauri.key" || cp "$RUNNER_TEMP/tauri.key.orig" "$RUNNER_TEMP/tauri.key"
+            fi
             echo "TAURI_SIGNING_PRIVATE_KEY=$RUNNER_TEMP/tauri.key" >> "$GITHUB_ENV"
           fi
           if [ -n "${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}" ]; then
