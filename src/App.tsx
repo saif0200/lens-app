@@ -17,7 +17,7 @@ import { storage } from "./services/storage";
 import { cleanAiText } from "./utils/textUtils";
 import { useClipboard } from "./hooks/useClipboard";
 import { OPENAI_MODELS, GEMINI_MODELS } from "./config/models";
-import { UpdateChecker } from "./components/UpdatePopup";
+import { useAutoUpdate } from "./hooks/useAutoUpdate";
 
 type MathJaxObject = {
   typesetPromise?: (elements?: (Element | Document)[]) => Promise<void>;
@@ -1099,12 +1099,13 @@ function App() {
     });
   };
 
+  const updateState = useAutoUpdate();
+
   return (
     <div
       className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}
       style={{ zoom: zoomLevel } as React.CSSProperties}
     >
-      <UpdateChecker />
       <div className="toolbar">
         <button
           className="toolbar-segment drag-handle"
@@ -1214,10 +1215,11 @@ function App() {
             className="toolbar-segment toolbar-menu"
             data-tauri-drag-region-disabled
             aria-label="Menu"
-            title="Settings"
+            title={updateState.available ? "Update Available" : "Settings"}
             onClick={() => {
               void handleOpenSettings();
             }}
+            style={{ position: 'relative' }}
           >
             <svg
               width="16"
@@ -1231,6 +1233,20 @@ function App() {
               <circle cx="8" cy="8" r="1.5" fill="currentColor" />
               <circle cx="8" cy="13" r="1.5" fill="currentColor" />
             </svg>
+            {updateState.available && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '6px',
+                  width: '6px',
+                  height: '6px',
+                  backgroundColor: '#ef4444',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 0 2px rgba(0,0,0,0.5)'
+                }}
+              />
+            )}
           </button>
         )}
       </div>

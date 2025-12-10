@@ -65,7 +65,7 @@ export async function sendMessageToGemini(
       // Add conversation history
       ...recentHistory.map((msg) => {
         const parts: any[] = [{ text: msg.text }];
-        
+
         if (msg.type === 'user' && msg.screenshotIncluded && msg.screenshotData) {
           const match = msg.screenshotData.match(/^data:(.+);base64,(.+)$/);
           if (match) {
@@ -77,7 +77,7 @@ export async function sendMessageToGemini(
             });
           }
         }
-        
+
         return {
           role: msg.type === 'user' ? 'user' : 'model',
           parts: parts,
@@ -91,8 +91,8 @@ export async function sendMessageToGemini(
     ];
 
     // Determine model and tools
-    const model = options.model || "models/gemini-2.5-flash";
-    
+    const model = options.model || "gemini-flash-lite-latest";
+
     const tools: any[] = [];
     if (webSearchEnabled) {
       tools.push({ googleSearch: {} });
@@ -106,7 +106,7 @@ export async function sendMessageToGemini(
       // Map reasoningEffort to thinkingLevel
       thinkingConfig = {
         thinkingLevel: options.reasoningEffort === 'low' ? "LOW" : "HIGH",
-        includeThoughts: true 
+        includeThoughts: true
       };
     } else if (thinkingEnabled) {
       // Gemini 2.0 Flash / Flash-Lite: Uses thinkingBudget
@@ -139,11 +139,11 @@ export async function sendMessageToGemini(
     // Extract sources from grounding metadata
     const sources: Source[] = [];
     const candidate = response.candidates?.[0];
-    
+
     // Extract thought and text
     let thought = "";
     let text = "";
-    
+
     if (candidate?.content?.parts) {
       for (const part of candidate.content.parts) {
         // Check for thought property (it's a boolean in the API response for thought parts)
@@ -162,7 +162,7 @@ export async function sendMessageToGemini(
 
     const groundingMetadata = candidate?.groundingMetadata;
     const groundingChunks = groundingMetadata?.groundingChunks;
-    
+
     if (groundingChunks && Array.isArray(groundingChunks)) {
       for (const chunk of groundingChunks) {
         const web = chunk.web;
@@ -172,7 +172,7 @@ export async function sendMessageToGemini(
           if (url) {
             url = cleanUrl(url);
           }
-          
+
           if (url && web.title) {
             sources.push({
               title: web.title,

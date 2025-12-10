@@ -1,7 +1,8 @@
 .toolbar {
   display: flex;
   align-items: center;
-  width: 100%;
+  width: fit-content;
+  margin: 0 auto;
   gap: var(--segment-gap);
   padding: var(--toolbar-padding);
   background: var(--toolbar-bg);
@@ -153,6 +154,8 @@
 
 .toolbar-menu {
   padding: var(--segment-padding-y) 8px;
+  margin-left: 12px;
+  margin-right: 6px;
 }
 
 .toolbar-menu svg {
@@ -171,7 +174,7 @@
   width: 26px;
   height: 26px;
   padding: 0;
-  margin-left: 5px;
+  margin-left: 18px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;

@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import "./styles/index.css";
 import { storage } from "./services/storage";
 import { ShortcutRecorder } from "./components/ShortcutRecorder";
+import { useAutoUpdate } from "./hooks/useAutoUpdate";
 
 interface Shortcuts {
   toggle: string;
@@ -16,6 +17,16 @@ function Settings() {
   const [contentProtection, setContentProtection] = useState(false);
   const [shortcuts, setShortcuts] = useState<Shortcuts>({ toggle: '', ask: '', screen_share: '' });
   const [saved, setSaved] = useState(false);
+
+  const {
+    checking,
+    available,
+    info,
+    downloading,
+    progress,
+    checkForUpdates,
+    downloadAndInstall
+  } = useAutoUpdate(true);
 
   useEffect(() => {
     const storedOpenaiKey = storage.getOpenAIKey();
@@ -177,6 +188,39 @@ function Settings() {
               value={shortcuts.screen_share}
               onChange={(val) => handleShortcutChange('screen_share', val)}
             />
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <label className="settings-label">App Updates</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              {checking ? 'Checking for updates...' :
+                available ? `New version available: ${info?.version}` :
+                  downloading ? `Downloading... ${progress}%` :
+                    'App is up to date'}
+            </span>
+            {available ? (
+              <button
+                className="settings-button success"
+                onClick={downloadAndInstall}
+                disabled={downloading}
+                style={{ width: 'auto', minWidth: '120px', height: '32px', padding: '0 10px', fontSize: '13px' }}
+              >
+                {downloading ? `${progress}%` : 'Update & Restart'}
+              </button>
+            ) : (
+              <button
+                className="settings-button"
+                onClick={checkForUpdates}
+                disabled={checking}
+                style={{ width: 'auto', minWidth: '120px', height: '32px', padding: '0 10px', fontSize: '13px' }}
+              >
+                Check
+              </button>
+            )}
           </div>
         </div>
       </div>
