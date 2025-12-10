@@ -10,10 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "trayIcon": {
-      "iconPath": "icons/icon.ico",
-      "iconAsTemplate": false
-    },
+    "trayIcon": null,
     "windows": [
       {
         "title": "lens-app",

@@ -28,7 +28,7 @@ serde_json = "1"
 base64 = "0.22"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-tauri = { version = "2", features = ["macos-private-api"] }
+tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
 cocoa = "0.25"
 objc = "0.2"
 

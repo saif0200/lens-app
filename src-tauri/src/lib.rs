@@ -71,6 +71,42 @@ pub fn run() {
                 register_shortcut(&config.shortcuts.toggle);
                 register_shortcut(&config.shortcuts.ask);
                 register_shortcut(&config.shortcuts.screen_share);
+
+                // System Tray Setup
+                use tauri::menu::{Menu, MenuItem};
+                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
+
+                let toggle_item =
+                    MenuItem::with_id(app, "toggle", "Toggle Window", true, None::<&str>)?;
+                let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&toggle_item, &quit_item])?;
+
+                let toggle_shortcut = config.shortcuts.toggle.clone();
+
+                TrayIconBuilder::new()
+                    .icon(app.default_window_icon().unwrap().clone())
+                    .menu(&menu)
+                    .tooltip(format!("Lens App - {} to toggle", toggle_shortcut))
+                    .on_menu_event(move |_app, event| match event.id().as_ref() {
+                        "toggle" => {
+                            let _ = _app.emit("toggle-window-triggered", ());
+                        }
+                        "quit" => {
+                            std::process::exit(0);
+                        }
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let tauri::tray::TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            let _ = tray.app_handle().emit("toggle-window-triggered", ());
+                        }
+                    })
+                    .build(app)?;
             }
 
             #[cfg(target_os = "macos")]
@@ -108,46 +144,7 @@ pub fn run() {
 
             #[cfg(target_os = "windows")]
             {
-                use tauri::menu::{Menu, MenuItem};
-                use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder};
-
-                let toggle_item = MenuItem::with_id(
-                    app,
-                    "toggle",
-                    "Toggle Window (Ctrl+\\)",
-                    true,
-                    None::<&str>,
-                )?;
-                let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-                let menu = Menu::with_items(app, &[&toggle_item, &quit_item])?;
-
-                let config = config::load_config(app.handle());
-                let toggle_shortcut = config.shortcuts.toggle.clone();
-
-                TrayIconBuilder::new()
-                    .icon(app.default_window_icon().unwrap().clone())
-                    .menu(&menu)
-                    .tooltip(format!("Lens App - {} to toggle", toggle_shortcut))
-                    .on_menu_event(move |_app, event| match event.id().as_ref() {
-                        "toggle" => {
-                            let _ = _app.emit("toggle-window-triggered", ());
-                        }
-                        "quit" => {
-                            std::process::exit(0);
-                        }
-                        _ => {}
-                    })
-                    .on_tray_icon_event(|tray, event| {
-                        if let tauri::tray::TrayIconEvent::Click {
-                            button: MouseButton::Left,
-                            button_state: MouseButtonState::Up,
-                            ..
-                        } = event
-                        {
-                            let _ = tray.app_handle().emit("toggle-window-triggered", ());
-                        }
-                    })
-                    .build(app)?;
+                // Windows specific setup if any left
             }
 
             Ok(())
