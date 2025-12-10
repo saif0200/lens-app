@@ -1031,9 +1031,7 @@ function App() {
       // Dynamically set spacer height based on viewport and last AI message
       const messagesContainer = node.parentElement;
       if (messagesContainer) {
-        const lastAiMessage = messagesContainer.querySelector('.message-ai:last-of-type');
         const viewportHeight = messagesContainer.clientHeight; // Height of visible area
-        const messageHeight = lastAiMessage ? lastAiMessage.scrollHeight : 0;
 
         // Check if the last user message has an attachment
         const lastUserMessage = messages.filter(m => m.type === 'user').pop();
@@ -1041,7 +1039,7 @@ function App() {
 
         // Reduce spacer height if there's an attachment (30% instead of 50%)
         const spacerMultiplier = hasAttachment ? 0.3 : 0.5;
-        const spacerHeight = Math.max(viewportHeight * spacerMultiplier, messageHeight + 20);
+        const spacerHeight = viewportHeight * spacerMultiplier;
         node.style.minHeight = `${spacerHeight}px`;
       }
 

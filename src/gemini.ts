@@ -4,7 +4,7 @@ import { storage } from "./services/storage";
 import { extractMarkdownLinks, removeCitations, cleanUrl } from "./utils/responseProcessor";
 
 function getGeminiClient() {
-  const apiKey = storage.getGeminiKey();
+  const apiKey = storage.getGeminiKey() || import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("Gemini API key not found. Please set it in settings.");
   }

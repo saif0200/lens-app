@@ -136,7 +136,7 @@ function Settings() {
             type="password"
             value={geminiKey}
             onChange={(e) => setGeminiKey(e.target.value)}
-            placeholder="AIza..."
+            placeholder={import.meta.env.VITE_GEMINI_API_KEY ? "Using bundled key" : "AIza..."}
             className="settings-input"
           />
           <button
