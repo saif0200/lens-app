@@ -1633,7 +1633,6 @@ function App() {
                 <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '8px', alignSelf: 'center' }}>v0.1.1</span>
           </div>
         </div>
       </div>
