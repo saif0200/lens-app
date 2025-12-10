@@ -109,8 +109,8 @@ function App() {
     void node;
     const childText = Array.isArray(children)
       ? children
-          .map((child) => (typeof child === "string" ? child : ""))
-          .join("")
+        .map((child) => (typeof child === "string" ? child : ""))
+        .join("")
       : typeof children === "string"
         ? children
         : "";
@@ -340,11 +340,11 @@ function App() {
           y: targetY,
         });
       }
-      
+
       settingsWindow.once('tauri://created', function () {
         // webview window successfully created
       });
-      
+
       settingsWindow.once('tauri://error', function (e) {
         // an error happened creating the webview window
         console.error("Error creating settings window", e);
@@ -648,20 +648,20 @@ function App() {
   const processFile = (file: File) => {
     // Check if file is text-based (code, txt, md, etc.)
     // This is a heuristic list, can be expanded
-    const isText = file.type.startsWith('text/') || 
-                   /\.(js|jsx|ts|tsx|json|md|css|html|xml|yml|yaml|py|rb|java|c|cpp|h|rs|go|php|txt|sh|bat|ps1)$/i.test(file.name);
-    
+    const isText = file.type.startsWith('text/') ||
+      /\.(js|jsx|ts|tsx|json|md|css|html|xml|yml|yaml|py|rb|java|c|cpp|h|rs|go|php|txt|sh|bat|ps1)$/i.test(file.name);
+
     const isImage = file.type.startsWith('image/');
 
     const reader = new FileReader();
-    
+
     if (isText) {
       reader.onload = (e) => {
         const text = e.target?.result as string;
         // Create base64 for consistency (though we prefer 'text' for AI)
         // Use a safe way to encode UTF-8 text to base64
         const base64 = btoa(unescape(encodeURIComponent(text)));
-        
+
         const newAttachment = {
           id: Date.now().toString() + Math.random().toString(36).substring(2),
           file,
@@ -670,7 +670,7 @@ function App() {
           mimeType: file.type || 'text/plain',
           text
         };
-        
+
         setAttachments(prev => [...prev, newAttachment]);
         setIsScreenShareEnabled(false);
       };
@@ -687,7 +687,7 @@ function App() {
           base64,
           mimeType: file.type || 'application/octet-stream'
         };
-        
+
         setAttachments(prev => [...prev, newAttachment]);
         setIsScreenShareEnabled(false);
       };
@@ -969,10 +969,10 @@ function App() {
   const scrollTargetMessage = messages.length > 0 ? messages[messages.length - 1] : null;
   const scrollTargetKey = scrollTargetMessage
     ? JSON.stringify([
-        scrollTargetMessage.id,
-        scrollTargetMessage.type,
-        scrollTargetMessage.type === "ai" ? scrollTargetMessage.text : null,
-      ])
+      scrollTargetMessage.id,
+      scrollTargetMessage.type,
+      scrollTargetMessage.type === "ai" ? scrollTargetMessage.text : null,
+    ])
     : null;
 
   // Auto-scroll to latest visible message, including streaming updates
@@ -1113,8 +1113,8 @@ function App() {
             attachments.length > 0
               ? "Screen sharing is disabled when attachments are present"
               : isScreenShareEnabled
-              ? "Stop sharing your current screen capture"
-              : "Capture your screen for the next message"
+                ? "Stop sharing your current screen capture"
+                : "Capture your screen for the next message"
           }
         >
           <span className="action-label">Share</span>
@@ -1207,8 +1207,8 @@ function App() {
                               ) : (
                                 <div className="message-attachment-file">
                                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                   </svg>
                                   <span className="file-name">{att.name}</span>
                                 </div>
@@ -1256,22 +1256,22 @@ function App() {
                     <div className="ai-text">
                       {message.thought && (
                         <div className="thought-container">
-                          <button 
+                          <button
                             className="thought-toggle"
                             onClick={() => toggleThought(message.id)}
                           >
                             <span className="thought-label">
                               Thought for {message.thoughtDuration || 0} seconds
                             </span>
-                            <svg 
+                            <svg
                               className={`thought-chevron ${expandedThoughts.has(message.id) ? 'expanded' : ''}`}
-                              width="12" 
-                              height="12" 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
                               xmlns="http://www.w3.org/2000/svg"
                             >
-                              <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                           </button>
                           <div className={`thought-content-wrapper ${expandedThoughts.has(message.id) ? 'expanded' : ''}`}>
@@ -1308,52 +1308,52 @@ function App() {
                                 try {
                                   const urlObj = new URL(source.url);
                                   const hostname = urlObj.hostname.replace('www.', '');
-                                  
+
                                   // Check if it's a proxy domain
                                   const isProxy = hostname.includes('vertexaisearch') || hostname.includes('googleusercontent');
 
                                   let displayTitle = source.title;
                                   let isTitleUrl = false;
                                   try {
-                                      // Check if title is a URL
-                                      if (displayTitle.startsWith('http://') || displayTitle.startsWith('https://')) {
-                                          isTitleUrl = true;
-                                      }
-                                  } catch {}
+                                    // Check if title is a URL
+                                    if (displayTitle.startsWith('http://') || displayTitle.startsWith('https://')) {
+                                      isTitleUrl = true;
+                                    }
+                                  } catch { }
 
                                   if (isTitleUrl) {
-                                      // If title is a URL, try to extract something meaningful or hide it
-                                      try {
-                                          const titleUrlObj = new URL(displayTitle);
-                                          const path = titleUrlObj.pathname;
-                                          if (path && path !== '/' && path.length > 1) {
-                                              // Use the last segment of the path as title
-                                              const segments = path.split('/').filter(Boolean);
-                                              if (segments.length > 0) {
-                                                  displayTitle = segments[segments.length - 1];
-                                                  // Decode it to make it readable
-                                                  displayTitle = decodeURIComponent(displayTitle).replace(/[-_]/g, ' ');
-                                              } else {
-                                                  displayTitle = '';
-                                              }
-                                          } else {
-                                              // Just domain, so hide title part
-                                              displayTitle = '';
-                                          }
-                                      } catch {
-                                          // If parsing fails, just hide it
+                                    // If title is a URL, try to extract something meaningful or hide it
+                                    try {
+                                      const titleUrlObj = new URL(displayTitle);
+                                      const path = titleUrlObj.pathname;
+                                      if (path && path !== '/' && path.length > 1) {
+                                        // Use the last segment of the path as title
+                                        const segments = path.split('/').filter(Boolean);
+                                        if (segments.length > 0) {
+                                          displayTitle = segments[segments.length - 1];
+                                          // Decode it to make it readable
+                                          displayTitle = decodeURIComponent(displayTitle).replace(/[-_]/g, ' ');
+                                        } else {
                                           displayTitle = '';
+                                        }
+                                      } else {
+                                        // Just domain, so hide title part
+                                        displayTitle = '';
                                       }
+                                    } catch {
+                                      // If parsing fails, just hide it
+                                      displayTitle = '';
+                                    }
                                   }
 
                                   return (
                                     <>
                                       {!isProxy && <span className="source-domain">{hostname}</span>}
                                       {displayTitle && displayTitle !== hostname && (
-                                          <>
-                                            {!isProxy && <span className="source-divider">-</span>}
-                                            <span className="source-title">{displayTitle}</span>
-                                          </>
+                                        <>
+                                          {!isProxy && <span className="source-divider">-</span>}
+                                          <span className="source-title">{displayTitle}</span>
+                                        </>
                                       )}
                                       {isProxy && !displayTitle && <span className="source-title">Source</span>}
                                     </>
@@ -1448,8 +1448,8 @@ function App() {
                   ) : (
                     <div className="file-icon">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       <span className="file-ext">{att.file.name.split('.').pop()}</span>
                     </div>
@@ -1460,7 +1460,7 @@ function App() {
                     aria-label="Remove attachment"
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
                 </div>
@@ -1542,7 +1542,7 @@ function App() {
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
             {(currentProvider === 'openai' || (currentProvider === 'gemini' && geminiModel.includes('gemini-3-pro'))) ? (
@@ -1555,18 +1555,18 @@ function App() {
                 <span className="reasoning-icon">
                   {reasoningEffort === 'low' && (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
                   {reasoningEffort === 'medium' && (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
                   {reasoningEffort === 'high' && (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill="currentColor" opacity="0.2"/>
-                      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill="currentColor" opacity="0.2" />
+                      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
                 </span>
@@ -1586,8 +1586,8 @@ function App() {
                 aria-pressed={isGeminiThinkingEnabled}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill="currentColor" opacity="0.2"/>
-                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" fill="currentColor" opacity="0.2" />
+                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="reasoning-label">Thinking</span>
               </button>
@@ -1604,8 +1604,8 @@ function App() {
               aria-pressed={isWebSearchEnabled}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span className="reasoning-label">Web Search</span>
             </button>
@@ -1630,9 +1630,10 @@ function App() {
                 ))}
               </select>
               <svg className="model-selector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
+            <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '8px', alignSelf: 'center' }}>v0.1.1</span>
           </div>
         </div>
       </div>
@@ -1641,4 +1642,3 @@ function App() {
 }
 
 export default App;
-                         
