@@ -132,7 +132,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--keycap-size);
+  min-width: var(--keycap-size);
   height: var(--keycap-size);
   background: var(--keycap-bg);
   border: 1px solid var(--keycap-border);
@@ -141,8 +141,10 @@
   font-weight: 600;
   color: var(--text-secondary);
   line-height: 1;
-  padding-bottom: 2px;
+  padding: 0 4px 2px 4px;
 }
+
+
 
 .keycap-enter {
   padding-bottom: 0;

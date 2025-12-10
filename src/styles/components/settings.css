@@ -2,19 +2,21 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  padding: 24px;
-  padding-top: 38px;
+  padding: 20px;
+  padding-top: 40px;
+  /* Space for drag handle */
   background: #121212;
   background: rgba(0, 0, 0, 0.85);
   color: var(--text-primary);
-  overflow-y: auto;
+  overflow-y: hidden;
+  /* Prevent scroll */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
 .settings-header {
-  margin-bottom: 24px;
-  font-size: 20px;
+  margin-bottom: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.02em;
@@ -22,24 +24,24 @@
 }
 
 .settings-section {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   -webkit-app-region: no-drag;
 }
 
 .settings-label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
+  margin-bottom: 4px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
 }
 
 .settings-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--toolbar-border);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text-primary);
   font-size: 13px;
   font-family: inherit;
@@ -58,16 +60,18 @@
 }
 
 .settings-description {
-  margin-top: 8px;
+  margin-top: 4px;
+  /* Slightly reduced */
   font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.4;
   opacity: 0.8;
 }
 
 .settings-actions {
   margin-top: auto;
-  padding-top: 20px;
+  padding-top: 16px;
+  /* Reduced from 20 */
 }
 
 .settings-button {
@@ -75,10 +79,12 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 10px;
+  padding: 8px;
+  /* Reduced from 10 */
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
+  /* Match input radius */
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
@@ -110,4 +116,133 @@
   height: 40px;
   z-index: 50;
   -webkit-app-region: drag;
+}
+
+.settings-shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.shortcut-item span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.shortcut-recorder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--toolbar-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  height: 32px;
+}
+
+.shortcut-recorder:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.shortcut-recorder.recording {
+  background: rgba(99, 179, 237, 0.15);
+  border-color: rgba(99, 179, 237, 0.5);
+  color: #63b3ed;
+  box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
+}
+
+.shortcut-recorder.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.key-cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.shortcut-placeholder {
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.recording .shortcut-placeholder {
+  color: #63b3ed;
+  opacity: 1;
+  font-weight: 500;
+  animation: pulse 2s infinite;
+}
+
+.shortcut-recorder.error {
+  border-color: #ef4444;
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
 }

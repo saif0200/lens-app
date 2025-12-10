@@ -76,11 +76,33 @@ function App() {
   const prevShowInputRef = useRef(showInput);
   const resizeTimeoutRef = useRef<number | null>(null);
   const lastWindowSizeRef = useRef<{ width: number; height: number } | null>(null);
+  const [shortcuts, setShortcuts] = useState({
+    toggle: "CommandOrControl+\\",
+    ask: "CommandOrControl+Enter",
+    screen_share: "CommandOrControl+S",
+  });
+
   const isMac =
     typeof navigator !== "undefined"
       ? navigator.platform.toUpperCase().includes("MAC")
       : false;
-  const modKey = isMac ? "⌘" : "Ctrl";
+
+  // Fetch shortcuts on mount and listen for changes
+  useEffect(() => {
+    const fetchShortcuts = () => {
+      invoke<{ toggle: string; ask: string; screen_share: string }>("get_shortcuts")
+        .then(setShortcuts)
+        .catch(console.error);
+    };
+
+    fetchShortcuts();
+
+    const unlisten = listen('shortcuts-changed', fetchShortcuts);
+
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, []);
 
   // Keep ref in sync with state for immediate access
   useEffect(() => {
@@ -1045,6 +1067,26 @@ function App() {
     }
   }, [currentProvider, geminiModel, reasoningEffort]);
 
+  const renderShortcutKeys = (shortcut: string) => {
+    const keys = shortcut.split("+");
+    return keys.map((key, i) => {
+      let display = key;
+      if (key === "CommandOrControl") display = isMac ? "⌘" : "Ctrl";
+      else if (key === "Command") display = "⌘";
+      else if (key === "Control") display = "Ctrl";
+      else if (key === "Shift") display = "Shift";
+      else if (key === "Alt") display = "Alt";
+      else if (key === "Enter") display = "↵";
+      else if (key.length === 1) display = key.toUpperCase();
+
+      return (
+        <span key={i} className="keycap">
+          {display}
+        </span>
+      );
+    });
+  };
+
   return (
     <div
       className={`app ${showInput ? "with-input" : ""} ${hasExpanded ? "chat-expanded" : ""}`}
@@ -1094,8 +1136,7 @@ function App() {
           onClick={handleAskButton}
         >
           <span className="action-label">Ask</span>
-          <span className="keycap">{modKey}</span>
-          <span className="keycap keycap-enter">↵</span>
+          {renderShortcutKeys(shortcuts.ask)}
         </button>
 
         <button
@@ -1118,8 +1159,7 @@ function App() {
           }
         >
           <span className="action-label">Share</span>
-          <span className="keycap">{modKey}</span>
-          <span className="keycap">S</span>
+          {renderShortcutKeys(shortcuts.screen_share)}
           <span className="screen-share-indicator" aria-hidden="true" />
         </button>
 
@@ -1130,8 +1170,7 @@ function App() {
           onClick={handleToggleWindow}
         >
           <span className="action-label">Show/Hide</span>
-          <span className="keycap">{modKey}</span>
-          <span className="keycap">\</span>
+          {renderShortcutKeys(shortcuts.toggle)}
         </button>
 
         {shouldShowResetButton ? (
@@ -1475,7 +1514,7 @@ function App() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={`Ask about your screen or conversation, or ${modKey} ↵ for Assist`}
+              placeholder={`Ask about your screen or conversation, or ${shortcuts.ask.replace('CommandOrControl', isMac ? '⌘' : 'Ctrl').replace('Shift', isMac ? '⇧' : 'Shift').replace('Enter', '↵').replace('+', ' ')} for Assist`}
               disabled={isGenerating}
             />
             {isGenerating ? (
