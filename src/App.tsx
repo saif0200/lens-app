@@ -296,7 +296,7 @@ function App() {
     const avoidMainWindow = options?.avoidMainWindow ?? false;
     try {
       const settingsWidth = 400;
-      const settingsHeight = 500;
+      const settingsHeight = 600;
       let settingsWindow = await WebviewWindow.getByLabel('settings');
 
       if (!avoidMainWindow) {
@@ -870,19 +870,18 @@ function App() {
       return;
     }
 
-    // Dynamically resize window based on state
     const resizeWindow = () => {
       // Use toolbar width if available, otherwise fallback
-      const toolbarElement = document.querySelector('.toolbar');
+      // const toolbarElement = document.querySelector('.toolbar');
       let baseWidth = 545; // Default fallback
 
-      if (toolbarElement) {
-        // Add padding (24px) + slight buffer
-        const measuredWidth = toolbarElement.scrollWidth + 24;
-        if (measuredWidth > baseWidth) {
-          baseWidth = measuredWidth;
-        }
-      }
+      // if (toolbarElement) {
+      //   // Add padding (24px) + slight buffer
+      //   const measuredWidth = toolbarElement.scrollWidth + 24;
+      //   if (measuredWidth > baseWidth) {
+      //     baseWidth = measuredWidth;
+      //   }
+      // }
 
       let baseHeight: number;
 
