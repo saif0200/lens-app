@@ -539,6 +539,7 @@ function App() {
         screenshotIncluded = true;
         screenshotDataUrl = `data:image/png;base64,${capturedBase64}`;
         screenshotMimeType = 'image/png';
+        setIsScreenShareEnabled(false);
       } else {
         setIsScreenShareEnabled(false);
       }
@@ -871,7 +872,18 @@ function App() {
 
     // Dynamically resize window based on state
     const resizeWindow = () => {
-      const baseWidth = 545;
+      // Use toolbar width if available, otherwise fallback
+      const toolbarElement = document.querySelector('.toolbar');
+      let baseWidth = 545; // Default fallback
+
+      if (toolbarElement) {
+        // Add padding (24px) + slight buffer
+        const measuredWidth = toolbarElement.scrollWidth + 24;
+        if (measuredWidth > baseWidth) {
+          baseWidth = measuredWidth;
+        }
+      }
+
       let baseHeight: number;
 
       // Both providers now have a footer
@@ -938,7 +950,7 @@ function App() {
         resizeTimeoutRef.current = null;
       }
     };
-  }, [showInput, hasExpanded, currentProvider, attachments.length, zoomLevel]);
+  }, [showInput, hasExpanded, currentProvider, attachments.length, zoomLevel, shortcuts]);
 
   useEffect(() => {
     // Listen for global shortcut event from Rust backend
