@@ -1,255 +1,111 @@
-# Lens
+# Lens - Context-Aware AI Assistant
 
-A lightweight, AI-powered desktop assistant with screen capture capabilities. Get instant AI help with what's on your screen using OpenAI or Google Gemini.
+> **A native, lightweight desktop assistant that integrates AI directly into your workflow without context switching.**
 
-[![Build](https://github.com/saif/lens-app/actions/workflows/build.yml/badge.svg)](https://github.com/saif/lens-app/actions/workflows/build.yml)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)
+![Platform Support](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue)
+![Tech Stack](https://img.shields.io/badge/stack-Tauri%20%7C%20Rust%20%7C%20React%20%7C%20TypeScript-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## About
+---
 
-Lens is a floating desktop application that provides quick access to AI assistants. Capture your screen, attach files, and get intelligent responses - all from a minimal, always-accessible overlay window.
+## 🎯 Project Purpose
 
-**Key highlights:**
-- **Multi-provider support** - Switch between OpenAI (GPT-5) and Google Gemini models
-- **Screen capture** - Share your screen with AI for visual context
-- **Privacy-focused** - Content protection mode makes the window invisible in screenshots
-- **Keyboard-first** - Global shortcuts for quick access without touching the mouse
+In the modern developer workflow, switching between an IDE and a browser for AI assistance breaks flow and context. **Lens** solves this by acting as an intelligent, ephemeral overlay that "sees" what you see.
 
-## Features
+The goal was to build a tool that feels **native, instant, and invisible** until needed. It leverages recent advancements in multimodal AI (Gemini 1.5, GPT-4o) to analyze screen content in real-time, allowing users to ask questions like *"What is this error?"* or *"Explain this graph"* without manual copy-pasting.
 
-### AI Capabilities
-- **Multiple AI Providers** - OpenAI GPT-5 (nano, mini, 5.1, Codex) and Google Gemini (2.5 Flash, Flash-Lite, 3 Pro Preview)
-- **Web Search** - AI can search the web for current information (auto-detects when needed)
-- **Reasoning Modes** - Adjustable thinking depth (low, medium, high) for complex problems
-- **Extended Thinking** - View the AI's reasoning process with expandable thought sections
+## 🚀 Key Technical Highlights
 
-### Input Methods
-- **Screen Capture** - Capture and analyze your entire screen
-- **File Attachments** - Attach code files, images, PDFs, and documents
-- **Paste Support** - Paste images directly from clipboard
+This project demonstrates proficiency in **systems programming, frontend engineering, and AI integration**.
 
-### User Experience
-- **Floating Window** - Always-on-top overlay that stays accessible
-- **Content Protection** - Hide the window from screen recordings and screenshots
-- **Markdown Rendering** - Rich formatting with syntax highlighting and math equations
-- **Copy Support** - One-click copy for AI responses and code blocks
+### 1. Native Desktop Integration (Rust + Tauri)
+- **Global Hotkeys**: Implemented low-level global shortcut listeners to toggle the app instantly (`Cmd + \`), independent of application focus.
+- **Window Management**:
+  - **macOS**: Utilizes `cocoa` crate to access `NSApplication` and `NSWindow` APIs directly, setting the app as an "Accessory" (hiding dock icon) and configuring collection behavior to ensure it floats above full-screen apps.
+  - **Windows**: Configures strictly typed window styles for seamless overlay behavior.
+- **Privacy-First Screen Capture**: Unlike Electron apps that might rely on heavier dependencies, Lens uses efficient Rust implementations for screen capture, ensuring low latency. It also implements **Content Protection** APIs to prevent the AI window itself from appearing in screenshots or screen shares.
 
-## Tech Stack
+### 2. Robust AI Abstraction Layer
+- Designed a scalable **Provider Pattern** in TypeScript (`src/ai.ts`) that decouples the UI from specific AI vendors.
+- Currently supports **OpenAI** and **Google Gemini**, with normalized data structures for messages, attachments, and streaming responses.
+- Handles **Multimodal Context** ("Vision") by efficiently processing and formatting base64 image data from the Rust backend for API consumption.
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, TypeScript, Vite |
-| Backend | Tauri 2, Rust |
-| AI SDKs | OpenAI SDK, Google GenAI SDK |
-| UI | React Markdown, React Syntax Highlighter, MathJax |
+### 3. Modern React 19 Frontend
+- Built with **React 19** and **Vite 7** for a performant, concurrent UI.
+- **Component Architecture**: Features a modular design with a focus on accessibility and keyboard navigation.
+- **Rich Content Rendering**: Custom implementation of Markdown rendering with syntax highlighting and MathJax support, ensuring code and formulas are readable.
 
-## Getting Started
+## 🛠️ Technology Stack & Rationale
+
+| Layer | Technology | Rationale |
+|-------|------------|-----------|
+| **Core Core** | **Tauri 2 (Rust)** | Chosen over Electron for its **<10MB binary size** and drastically lower RAM usage. Rust ensures memory safety and concurrency for global event listeners. |
+| **Frontend** | **React 19 + TypeScript** | Provides type safety and leverages the latest React features (Actions, optimizing compilers) for a snappy UI. |
+| **Build Tool** | **Vite** | Instant HMR (Hot Module Replacement) and optimized production builds. |
+| **AI Integration** | **OpenAI & Google GenAI SDKs** | Direct integration ensures access to the latest models (GPT-4o, Gemini 1.5 Pro) with full control over system prompts and temperature. |
+| **State** | **React Hooks** | Simple, efficient local state management suitable for an ephemeral overlay tool. |
+
+## 🏗️ Architecture Design
+
+The application follows a **Message-Passing Architecture** between the system (Rust) and the UI (Webview).
+
+```mermaid
+graph TD
+    User((User)) -->|Cmd + \| GlobalShortcut[Rust Global Shortcut Listener]
+    GlobalShortcut -->|Emit Event| WebView[Frontend UI]
+    
+    User -->|Cmd + S| ScreenCap[Rust Screen Capture]
+    ScreenCap -->|Bitmap -> Base64| WebView
+    
+    WebView -->|User Query + Context| AIService[AI Service Layer]
+    AIService -->|API Request| Cloud[OpenAI / Gemini]
+    Cloud -->|Stream Token| WebView
+```
+
+## ⚠️ Challenges & Trade-offs
+
+### Challenge: Cross-Platform Overlay Behavior
+**Problem**: Creating a window that stays on top of full-screen applications on macOS is notoriously difficult due to OS restrictions.
+**Solution**: I dropped down to unsafe Rust code using the `cocoa` bindings to manipulate `NSWindowCollectionBehavior`. This allows the window to join all spaces, effectively floating over everything, including full-screen IDEs.
+
+### Challenge: Screenshot Latency
+**Problem**: Sending full-resolution screenshots to the AI API can be slow and consume high bandwidth.
+**Solution**: Implemented an optimization pipeline where screenshots are captured natively in Rust, resized/compressed if necessary, and then passed to the frontend only when requested by the user.
+
+### Trade-off: Local vs. Cloud AI
+**Decision**: Currently relies on Cloud APIs (OpenAI/Google).
+**Reason**: While local LLMs (Llama 3) offer privacy, they are too heavy for many consumer laptops. The priority was *instant* feedback, which currently necessitates the speed of cloud inference models like Gemini Flash.
+
+## 🏃‍♂️ How to Run
 
 ### Prerequisites
-
-- **Node.js** 20 or higher
-- **Rust** (stable toolchain) - Install via [rustup](https://rustup.rs/)
-- **API Keys** - At least one of:
-  - [OpenAI API Key](https://platform.openai.com/api-keys)
-  - [Google Gemini API Key](https://aistudio.google.com/apikey)
+- **Node.js**: v20+
+- **Rust**: Latest stable (`rustup update`)
+- **API Keys**: OpenAI or Google Gemini (configured in `.env` or Settings)
 
 ### Installation
-
-1. **Clone the repository**
+1. **Clone & Install**
    ```bash
    git clone https://github.com/saif/lens-app.git
    cd lens-app
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm ci
    ```
 
-3. **Configure environment variables**
-
-   Create a `.env` file in the project root:
-   ```env
-   VITE_OPENAI_API_KEY=your-openai-api-key
-   VITE_GOOGLE_GENAI_API_KEY=your-gemini-api-key
+2. **Setup Env** (Optional, can also set in UI)
+   ```bash
+   cp .env.example .env
+   # Add your keys: VITE_OPENAI_API_KEY=...
    ```
 
-4. **Run in development mode**
+3. **Develop**
    ```bash
+   # Runs the Tauri dev window + Vite server
    npm run tauri dev
    ```
 
-## Configuration
-
-### API Keys
-
-You can configure API keys in two ways:
-
-1. **Environment variables** (`.env` file) - Set at build time
-2. **Settings window** - Configure at runtime via the app's settings panel
-
-Open settings with the menu button or `Ctrl+S` (Windows) / `Cmd+S` (macOS).
-
-### Content Protection
-
-Enable **Content Protection** in settings to make the Lens window invisible in:
-- Screenshots
-- Screen recordings
-- Screen sharing applications
-
-This is useful when you want to use Lens while sharing your screen without revealing the AI conversation.
-
-## Usage
-
-### Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+\` / `Cmd+\` | Toggle window visibility |
-| `Ctrl+Enter` / `Cmd+Enter` | Send message / Ask |
-| `Ctrl+S` / `Cmd+S` | Open settings |
-| `Ctrl++` / `Cmd++` | Zoom in |
-| `Ctrl+-` / `Cmd+-` | Zoom out |
-| `Ctrl+0` / `Cmd+0` | Reset zoom |
-
-### Capturing Your Screen
-
-1. Click the screen share button or press `Ctrl+S`
-2. Your screen will be captured automatically
-3. Type your question about what's on screen
-4. Press `Ctrl+Enter` or click Ask
-
-### Attaching Files
-
-- **Drag and drop** files onto the window
-- **Paste** images from clipboard (`Ctrl+V`)
-- **Click** the attachment area to browse files
-
-Supported formats: Images, code files (.js, .ts, .py, .rs, etc.), text files, PDFs
-
-### Switching AI Providers
-
-Click the provider toggle in the toolbar to switch between:
-- **Gemini** - Google's Gemini models
-- **OpenAI** - GPT-5 models
-
-Each provider has its own model selector for choosing specific models.
-
-### Using Web Search
-
-Web search is **automatically enabled** when your message:
-- Contains URLs
-- Includes phrases like "search for", "look up", "what's the latest"
-
-You can also manually toggle web search using the search button.
-
-### Reasoning Modes
-
-Cycle through reasoning effort levels by clicking the brain icon:
-- **Low** - Quick responses
-- **Medium** - Balanced thinking
-- **High** - Deep analysis for complex problems
-
-Some models (like Gemini 3 Pro) display their thinking process in expandable sections.
-
-## Building for Production
-
-### Build Command
-
-```bash
-npm run tauri build
-```
-
-This compiles the frontend and Rust backend, then bundles everything into platform-specific installers.
-
-### Build Output
-
-| Platform | Output Location | Formats |
-|----------|-----------------|---------|
-| Windows | `src-tauri/target/release/bundle/` | MSI, NSIS installer |
-| macOS | `src-tauri/target/release/bundle/` | DMG, APP bundle |
-
-### Platform-Specific Notes
-
-**Windows:**
-- Requires Visual Studio Build Tools with C++ workload
-- Produces both MSI and NSIS installers
-
-**macOS:**
-- Requires Xcode Command Line Tools
-- App runs as an accessory (no dock icon)
-
-## Project Structure
-
-```
-lens-app/
-├── src/                    # Frontend (React/TypeScript)
-│   ├── App.tsx            # Main chat interface
-│   ├── Settings.tsx       # Settings panel
-│   ├── ai.ts              # AI provider routing
-│   ├── openai.ts          # OpenAI integration
-│   ├── gemini.ts          # Gemini integration
-│   ├── types.ts           # TypeScript interfaces
-│   └── *.css              # Styles
-├── src-tauri/             # Backend (Rust/Tauri)
-│   ├── src/
-│   │   ├── lib.rs         # Tauri commands & window management
-│   │   └── main.rs        # Entry point
-│   ├── Cargo.toml         # Rust dependencies
-│   └── tauri.conf.json    # Tauri configuration
-├── index.html             # Main window entry
-├── settings.html          # Settings window entry
-├── package.json           # Node dependencies
-├── vite.config.ts         # Vite build config
-└── .env                   # Environment variables (create this)
-```
-
-## Contributing
-
-Contributions are welcome! Here's how to get started:
-
-### Development Workflow
-
-1. **Fork the repository** and clone your fork
-2. **Create a branch** for your feature or fix:
+4. **Build**
    ```bash
-   git checkout -b feature/your-feature-name
+   npm run tauri build
    ```
-3. **Make your changes** and test thoroughly
-4. **Commit** with clear, descriptive messages
-5. **Push** to your fork and open a Pull Request
 
-### Code Style
-
-- **TypeScript** - Follow existing patterns, use strict types
-- **Rust** - Run `cargo fmt` before committing
-- **CSS** - Use existing class naming conventions
-
-### Running Tests
-
-```bash
-# Frontend type checking
-npm run build
-
-# Rust checks
-cd src-tauri && cargo check
-```
-
-### Reporting Issues
-
-When reporting bugs, please include:
-- Operating system and version
-- Steps to reproduce
-- Expected vs actual behavior
-- Any error messages
-
-## Acknowledgments
-
-Built with these excellent open-source projects:
-
-- [Tauri](https://tauri.app/) - Desktop application framework
-- [React](https://react.dev/) - UI library
-- [Vite](https://vitejs.dev/) - Build tool
-- [React Markdown](https://github.com/remarkjs/react-markdown) - Markdown rendering
-- [React Syntax Highlighter](https://github.com/react-syntax-highlighter/react-syntax-highlighter) - Code highlighting
-- [MathJax](https://www.mathjax.org/) - Math equation rendering
+---
