@@ -12,7 +12,7 @@
 
 In the modern developer workflow, switching between an IDE and a browser for AI assistance breaks flow and context. **Lens** solves this by acting as an intelligent, ephemeral overlay that "sees" what you see.
 
-The goal was to build a tool that feels **native, instant, and invisible** until needed. It leverages recent advancements in multimodal AI (Gemini 1.5, GPT-4o) to analyze screen content in real-time, allowing users to ask questions like *"What is this error?"* or *"Explain this graph"* without manual copy-pasting.
+The goal was to build a tool that feels **native, instant, and invisible** until needed. It leverages recent advancements in multimodal AI (Gemini 2.5, GPT-5) to analyze screen content in real-time, allowing users to ask questions like *"What is this error?"* or *"Explain this graph"* without manual copy-pasting.
 
 ## 🚀 Key Technical Highlights
 
