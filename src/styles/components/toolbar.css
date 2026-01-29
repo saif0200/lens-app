@@ -1,8 +1,7 @@
 .toolbar {
   display: flex;
   align-items: center;
-  width: fit-content;
-  margin: 0 auto;
+  width: 100%;
   gap: var(--segment-gap);
   padding: var(--toolbar-padding);
   background: var(--toolbar-bg);
@@ -21,6 +20,7 @@
 .toolbar-segment {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: var(--segment-padding-y) var(--segment-padding-x);
   background: transparent;
@@ -35,6 +35,14 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-app-region: no-drag;
+}
+
+.toolbar-action {
+  flex: 1;
+}
+
+.provider-toggle {
+  flex: 0 0 auto;
 }
 
 .toolbar-segment:hover {
@@ -64,6 +72,7 @@
 }
 
 .drag-handle {
+  flex: 0 0 auto;
   cursor: grab;
   padding: var(--segment-padding-y) 12px;
   -webkit-app-region: drag;

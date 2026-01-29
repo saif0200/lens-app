@@ -11,24 +11,20 @@
   scroll-behavior: smooth;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(0, 0, 0, 0.5) 2%,
-    black 8%,
-    black 92%,
-    rgba(0, 0, 0, 0.5) 98%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(0, 0, 0, 0.5) 2%,
-    black 8%,
-    black 92%,
-    rgba(0, 0, 0, 0.5) 98%,
-    transparent 100%
-  );
+  mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.5) 2%,
+      black 8%,
+      black 92%,
+      rgba(0, 0, 0, 0.5) 98%,
+      transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.5) 2%,
+      black 8%,
+      black 92%,
+      rgba(0, 0, 0, 0.5) 98%,
+      transparent 100%);
 }
 
 .messages-area::-webkit-scrollbar {
@@ -47,6 +43,7 @@
     opacity: 0;
     transform: translateY(12px) scale(0.97);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -170,7 +167,7 @@
   font-size: 13px;
   line-height: 1.5;
   word-wrap: break-word;
-  max-width: 80%;
+  max-width: 100%;
   padding: 4px 0;
 }
 
@@ -178,11 +175,11 @@
   display: block;
 }
 
-.ai-text .ai-markdown > *:first-child {
+.ai-text .ai-markdown>*:first-child {
   margin-top: 0;
 }
 
-.ai-text .ai-markdown > *:last-child {
+.ai-text .ai-markdown>*:last-child {
   margin-bottom: 0;
 }
 
@@ -284,7 +281,7 @@
   overflow-x: auto;
 }
 
-.ai-text .ai-markdown mjx-container[display="true"] > svg {
+.ai-text .ai-markdown mjx-container[display="true"]>svg {
   max-width: 100%;
 }
 
@@ -311,10 +308,14 @@
 }
 
 @keyframes typingDot {
-  0%, 60%, 100% {
+
+  0%,
+  60%,
+  100% {
     opacity: 0.3;
     transform: translateY(0);
   }
+
   30% {
     opacity: 1;
     transform: translateY(-4px);

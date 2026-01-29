@@ -77,15 +77,6 @@ function Settings() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleClear = (keyType: 'openai' | 'gemini') => {
-    if (keyType === 'openai') {
-      setOpenaiKey("");
-      storage.removeOpenAIKey();
-    } else {
-      setGeminiKey("");
-      storage.removeGeminiKey();
-    }
-  };
 
   const handleShortcutChange = async (action: string, newValue: string): Promise<boolean> => {
     // Basic conflict check in frontend
@@ -109,48 +100,6 @@ function Settings() {
       <h2 className="settings-header">Settings</h2>
 
       <div className="settings-section">
-        <label className="settings-label">OpenAI API Key</label>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="password"
-            value={openaiKey}
-            onChange={(e) => setOpenaiKey(e.target.value)}
-            placeholder="sk-..."
-            className="settings-input"
-          />
-          <button
-            onClick={() => handleClear('openai')}
-            className="settings-button"
-            style={{ width: 'auto', padding: '0 12px', whiteSpace: 'nowrap' }}
-            title="Clear API Key"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <label className="settings-label">Gemini API Key</label>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="password"
-            value={geminiKey}
-            onChange={(e) => setGeminiKey(e.target.value)}
-            placeholder={import.meta.env.VITE_GEMINI_API_KEY ? "Using bundled key" : "AIza..."}
-            className="settings-input"
-          />
-          <button
-            onClick={() => handleClear('gemini')}
-            className="settings-button"
-            style={{ width: 'auto', padding: '0 12px', whiteSpace: 'nowrap' }}
-            title="Clear API Key"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-
-      <div className="settings-section">
         <label className="settings-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
           <span>Invisible to Screen Capture</span>
           <input
@@ -164,6 +113,8 @@ function Settings() {
           When enabled, the app window will be invisible in screenshots and screen sharing.
         </p>
       </div>
+
+
 
       <div className="settings-section">
         <label className="settings-label">Shortcuts</label>

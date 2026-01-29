@@ -51,9 +51,9 @@ function App() {
   const [hasExpanded, setHasExpanded] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [currentProvider, setCurrentProvider] = useState<AIProvider>('gemini');
-  const [openaiModel, setOpenaiModel] = useState(OPENAI_MODELS[0].id);
-  const [geminiModel, setGeminiModel] = useState(GEMINI_MODELS[0].id);
+  const [currentProvider, _setCurrentProvider] = useState<AIProvider>('gemini');
+  const [openaiModel, _setOpenaiModel] = useState(OPENAI_MODELS[0].id);
+  const [geminiModel, _setGeminiModel] = useState(GEMINI_MODELS[0].id);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('low');
   const [isGeminiThinkingEnabled, setIsGeminiThinkingEnabled] = useState(false);
   const [isWebSearchEnabled, setIsWebSearchEnabled] = useState(false);
@@ -1065,10 +1065,6 @@ function App() {
     });
   };
 
-  const currentModelId = currentProvider === 'openai' ? openaiModel : geminiModel;
-  const currentModels = currentProvider === 'openai' ? OPENAI_MODELS : GEMINI_MODELS;
-  const currentModelName = currentModels.find(m => m.id === currentModelId)?.name || currentModelId;
-
   useEffect(() => {
     // Ensure reasoning effort is valid for Gemini 3 Pro (only low/high)
     if (currentProvider === 'gemini' && geminiModel.includes('gemini-3-pro') && reasoningEffort === 'medium') {
@@ -1127,17 +1123,7 @@ function App() {
           </svg>
         </button>
 
-        <button
-          className="toolbar-segment toolbar-action provider-toggle"
-          data-tauri-drag-region-disabled
-          aria-label={`Switch to ${currentProvider === 'gemini' ? 'OpenAI' : 'Gemini'}`}
-          onClick={() => setCurrentProvider(prev => prev === 'gemini' ? 'openai' : 'gemini')}
-          title={`Current provider: ${currentProvider === 'gemini' ? 'Gemini' : 'OpenAI'}`}
-        >
-          <span className="action-label">
-            {currentProvider === 'gemini' ? 'Gemini' : 'OpenAI'}
-          </span>
-        </button>
+
 
         <button
           className="toolbar-segment toolbar-action"
@@ -1674,29 +1660,6 @@ function App() {
               <span className="reasoning-label">Web Search</span>
             </button>
             <div style={{ flexGrow: 1 }} />
-            <div className="model-selector-wrapper">
-              <span className="model-selector-value">{currentModelName}</span>
-              <select
-                className="model-selector"
-                value={currentModelId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (currentProvider === 'openai') {
-                    setOpenaiModel(val);
-                  } else {
-                    setGeminiModel(val);
-                  }
-                }}
-                aria-label="Select AI Model"
-              >
-                {currentModels.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-              <svg className="model-selector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
           </div>
         </div>
       </div>

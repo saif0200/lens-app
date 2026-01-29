@@ -20,9 +20,9 @@ interface InputFooterProps {
 
 export function InputFooter({
   currentProvider,
-  currentModelId,
-  currentModelName,
-  currentModels,
+  currentModelId: _currentModelId,
+  currentModelName: _currentModelName,
+  currentModels: _currentModels,
   geminiModel,
   reasoningEffort,
   isGeminiThinkingEnabled,
@@ -32,7 +32,7 @@ export function InputFooter({
   onCycleReasoningEffort,
   onToggleThinking,
   onToggleWebSearch,
-  onModelChange,
+  onModelChange: _onModelChange,
 }: InputFooterProps) {
   const showReasoningToggle = currentProvider === 'openai' || (currentProvider === 'gemini' && geminiModel.includes('gemini-3-pro'));
   const showThinkingToggle = currentProvider === 'gemini' && !geminiModel.includes('gemini-3-pro');
@@ -121,23 +121,6 @@ export function InputFooter({
       </button>
 
       <div style={{ flexGrow: 1 }} />
-
-      <div className="model-selector-wrapper">
-        <span className="model-selector-value">{currentModelName}</span>
-        <select
-          className="model-selector"
-          value={currentModelId}
-          onChange={(e) => onModelChange(e.target.value)}
-          aria-label="Select AI Model"
-        >
-          {currentModels.map(m => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-        <svg className="model-selector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
     </div>
   );
 }
